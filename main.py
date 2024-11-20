@@ -1,105 +1,59 @@
-from sly import Lexer, Parser
+from lexer import EnteLexer
+from parser import EnteParser
+from pathlib import Path
+import typer
+from typing_extensions import Annotated
+from typing import Optional
+
+cli = typer.Typer(no_args_is_help=True)
 
 
-# class EnteParser(Parser):
-#     pass
-#
+def read_ente_file(path_file: Path) -> str:
+    if path_file is None:
+        print("no input given")
+        raise typer.Abort()
+
+    if not path_file.is_file():
+        print("not a file")
+        raise typer.Abort()
+
+    return path_file.read_text()
 
 
-class EnteLexer(Lexer):
-    # Set of token names.   This is always required
-    tokens = {
-        # Identifiers and literals
-        ID,  # identifier
-        NUMBER,  # numeric literal
-        STRING,  # string literal
-        # Operators
-        PLUS,  # +
-        MINUS,  # -
-        TIMES,  # *
-        DIVIDE,  # /
-        ASSIGN,  # =
-        LESSER,  # <
-        GREATER,  # >
-        # Delimiters
-        LPAREN,  # (
-        RPAREN,  # )
-        LBRACE,  # {
-        RBRACE,  # }
-        LBRACKET,  # [
-        RBRACKET,  # ]
-        COLON,  # :
-        SEMICOLON,  # ;
-        COMMA,  # ,
-        # Keywords
-        PROGRAM,  # 'program'
-        MAIN,  # 'main'
-        PRINTF,  # 'printf'
-        INT,  # 'int'
-        FLOAT,  # 'float'
-        VAR,  # 'var'
-        END,  # 'end'
-        VOID,  # 'void'
-        IF,  # 'if'
-        ELSE,  # 'else'
-    }
+@cli.command("ast")
+def generate_ast(
+    file: Annotated[Path, typer.Argument()],
+    graphic: bool = False,
+):
+    from utils.ast_viz import draw_ast, draw_ast_terminal
 
-    # String containing ignored characters between tokens
-    ignore = " \t"
+    text = read_ente_file(file)
 
-    # Identifiers and literals
-    ID = r"[a-zA-Z_][a-zA-Z0-9_]*"
-    NUMBER = r"\d+"
+    lexer = EnteLexer()
+    parser = EnteParser()
+    res = parser.parse(lexer.tokenize(text))
 
-    # Operators
-    PLUS = r"\+"
-    MINUS = r"-"
-    TIMES = r"\*"
-    DIVIDE = r"/"
-    ASSIGN = r"="
-    LESSER = r"<"
-    GREATER = r">"
+    print(draw_ast_terminal(res))
 
-    # Delimiters
-    LPAREN = r"\("
-    RPAREN = r"\)"
-    LBRACE = r"\{"
-    RBRACE = r"\}"
-    LBRACKET = r"\["
-    RBRACKET = r"\]"
-    COLON = r":"
-    SEMICOLON = r";"
-    COMMA = r","
+    if graphic:
+        graph = draw_ast(res)
+        output_filename = "ast_visualization"
+        graph.render(output_filename, view=True)
 
-    # Keywords
-    ID["program"] = PROGRAM
-    ID["main"] = MAIN
-    ID["printf"] = PRINTF
-    ID["int"] = INT
-    ID["float"] = FLOAT
-    ID["var"] = VAR
-    ID["end"] = END
-    ID["void"] = VOID
-    ID["if"] = IF
-    ID["else"] = ELSE
 
-    @_(r'"[^"]*"')
-    def STRING(self, t):
-        # Strip the quotes from the string
-        t.value = t.value[1:-1]
-        return t
+@cli.command("run")
+def test_cli(file: Annotated[Path, typer.Argument()]):
+    text = read_ente_file(file)
 
-    @_(r"\n+")
-    def ignore_newline(self, t):
-        self.lineno += t.value.count("\n")
+    lexer = EnteLexer()
+    parser = EnteParser()
+    parser.parse(lexer.tokenize(text))
 
-    def error(self, t):
-        print("Line %d: Bad character %r" % (self.lineno, t.value[0]))
-        self.index += 1
+    print(parser.scope)
+    print(parser.directory)
+    print(parser.types)
 
 
 if __name__ == "__main__":
-    data = "x = 3 + 42 * (s - t)"
-    lexer = EnteLexer()
-    for tok in lexer.tokenize(data):
-        print("type=%r, value=%r" % (tok.type, tok.value))
+    cli()
+    # print(res)
