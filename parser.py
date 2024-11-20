@@ -20,9 +20,7 @@ class EnteParser(Parser):
         self.directory = {}
         self.types = {}
 
-    @_(
-        "PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON"
-    )
+    @_("PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON")
     def root(self, p):
         return (f"root {p[1]}", p[3], p[5])
 
@@ -42,7 +40,6 @@ class EnteParser(Parser):
         self.types[scope] = []
 
         return p[0]
-
 
     ##########
     # Global #
@@ -103,7 +100,7 @@ class EnteParser(Parser):
         func = p[-2]
         scope = "params"
         self.scope.append(scope)
-        self.directory[scope] = [] 
+        self.directory[scope] = []
         self.types[scope] = []
         return p
 
@@ -122,7 +119,7 @@ class EnteParser(Parser):
     def at_func(self, p):
         scope = p[-7]
         self.scope.append(scope)
-        self.directory[scope] = [] 
+        self.directory[scope] = []
         self.types[scope] = []
 
     @_("")
@@ -140,7 +137,7 @@ class EnteParser(Parser):
     def at_main(self, p):
         scope = "main"
         self.scope.append(scope)
-        self.directory[scope] = [] 
+        self.directory[scope] = []
         self.types[scope] = []
 
     @_("")
@@ -153,7 +150,6 @@ class EnteParser(Parser):
     @_("vars statements")
     def block(self, p):
         return p
-
 
     ##############
     # Statements #
