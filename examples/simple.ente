@@ -1,0 +1,18 @@
+program simple;
+var x : int;
+    y : float;
+
+void foo(x : int) {
+    var z : int;
+    write(z);
+    let z = 5;
+    while (x > y) {
+        write(z);
+    };
+};
+main {
+    var a : int;
+    let a = 5;
+};
+
+end;
