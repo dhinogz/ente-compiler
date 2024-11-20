@@ -37,7 +37,7 @@ def generate_ast(
 
     if graphic:
         graph = draw_ast(res)
-        output_filename = "ast_visualization"
+        output_filename = "tmp/ast_visualization"
         graph.render(output_filename, view=True)
 
 
