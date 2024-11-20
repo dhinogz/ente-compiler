@@ -9,10 +9,6 @@ cli = typer.Typer(no_args_is_help=True)
 
 
 def read_ente_file(path_file: Path) -> str:
-    if path_file is None:
-        print("no input given")
-        raise typer.Abort()
-
     if not path_file.is_file():
         print("not a file")
         raise typer.Abort()
@@ -20,7 +16,7 @@ def read_ente_file(path_file: Path) -> str:
     return path_file.read_text()
 
 
-@cli.command("ast")
+@cli.command("viz")
 def generate_ast(
     file: Annotated[Path, typer.Argument()],
     graphic: bool = False,
