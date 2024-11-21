@@ -5,6 +5,9 @@ import typer
 from typing_extensions import Annotated
 from typing import Optional
 
+from quadruples import Quadruple, QuadrupleManager
+from vm import MemoryManager, VirtualMachine
+
 cli = typer.Typer(no_args_is_help=True)
 
 
@@ -19,9 +22,8 @@ def read_ente_file(path_file: Path) -> str:
 @cli.command("viz")
 def generate_ast(
     file: Annotated[Path, typer.Argument()],
-    graphic: bool = False,
 ):
-    from utils.ast_viz import draw_ast, draw_ast_terminal
+    from utils.ast_viz import draw_ast
 
     text = read_ente_file(file)
 
@@ -29,12 +31,9 @@ def generate_ast(
     parser = EnteParser()
     res = parser.parse(lexer.tokenize(text))
 
-    print(draw_ast_terminal(res))
-
-    if graphic:
-        graph = draw_ast(res)
-        output_filename = "tmp/ast_visualization"
-        graph.render(output_filename, view=True)
+    graph = draw_ast(res)
+    output_filename = "tmp/ast_visualization"
+    graph.render(output_filename, view=True)
 
 
 @cli.command("run")
@@ -43,13 +42,28 @@ def test_cli(file: Annotated[Path, typer.Argument()]):
 
     lexer = EnteLexer()
     parser = EnteParser()
-    parser.parse(lexer.tokenize(text))
+    res = parser.parse(lexer.tokenize(text))
 
     print(parser.scope)
     print(parser.directory)
     print(parser.types)
+    print(parser.quadruples)
 
+@cli.command("vm")
+def run_vm(file: Annotated[Path, typer.Argument()]):
+    memory_manager = MemoryManager()
+    vm = VirtualMachine(memory_manager)
+
+    quadruples = []
+
+    text = read_ente_file(file)
+
+    for line in text.splitlines():
+        operator, left_operand, right_operand, result = line.split()
+        q = Quadruple(int(operator), int(left_operand), int(right_operand), int(result))
+        quadruples.append(q)
+
+    vm.execute(quadruples)
 
 if __name__ == "__main__":
     cli()
-    # print(res)
