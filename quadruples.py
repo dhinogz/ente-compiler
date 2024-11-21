@@ -17,7 +17,7 @@ class Quadruple:
 class QuadrupleManager:
     def __init__(self) -> None:
         self.operand_stack: list[str] = []
-        self.operand_type_stack: list[str] 
+        self.operand_type_stack: list[str] = []
         self.operator_stack: list[Operator] = []
         self.temp_count = 0
         self.quadruples: list[Quadruple] = []

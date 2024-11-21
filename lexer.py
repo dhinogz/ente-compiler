@@ -37,7 +37,6 @@ class EnteLexer(Lexer):
         ELSE,  # 'else'
         WHILE,  # 'while'
         DO,  # 'do'
-        LET, # 'let'
     }
 
     # String containing ignored characters between tokens
@@ -81,7 +80,6 @@ class EnteLexer(Lexer):
     ID["else"] = ELSE
     ID["while"] = WHILE
     ID["do"] = DO
-    ID["let"] = LET
 
     @_(r'"[^"]*"')
     def STRING(self, t):

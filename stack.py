@@ -3,7 +3,7 @@ class Stack:
         self.name = name
         self.stack = []
 
-    def push(self, item: str | int | dict) -> None:
+    def append(self, item: str | int | dict) -> None:
         self.stack.append(item)
 
     def pop(self) -> str | int | dict | None:
