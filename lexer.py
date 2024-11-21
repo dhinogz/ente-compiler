@@ -6,6 +6,7 @@ class EnteLexer(Lexer):
         # Identifiers and literals
         ID,  # identifier
         NUMBER,  # numeric literal
+        FLOAT_NUMBER, # float literal
         STRING,  # string literal
         # Operators
         PLUS,  # +
@@ -44,8 +45,8 @@ class EnteLexer(Lexer):
 
     # Identifiers and literals
     ID = r"[a-zA-Z_][a-zA-Z0-9_]*"
+    FLOAT_NUMBER = r"[-+]?[0-9]+\.[0-9]+([eE][-+]?[0-9]+)?"
     NUMBER = r"\d+"
-    # NUMBER = r"\d+(\.\d+)?"
 
     # Operators
     PLUS = r"\+"
