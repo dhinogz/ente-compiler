@@ -1,7 +1,12 @@
 from sly import Parser
 from lexer import EnteLexer
-from symbol_table import SymbolTable, Symbol
+from memory import MemoryAssigner
+from operators import Operator as Op
+
+# TODO: from symbol_table import SymbolTable, Symbol
 from quadruples import QuadrupleManager
+from semantics import validate_semantics
+from stack import Stack
 
 
 class EnteParser(Parser):
@@ -11,6 +16,7 @@ class EnteParser(Parser):
         ("left", PLUS, MINUS),
         ("left", MULTIPLY, DIVIDE),
     )
+
     debugfile = "parser.out"
 
     def __init__(self):
@@ -20,6 +26,16 @@ class EnteParser(Parser):
         self.directory = {}
         self.types = {}
 
+        # Stacks for quadruple building
+        self.operands = Stack("operands")
+        self.operand_types = Stack("operand_types")
+        self.operators = Stack("operators")
+
+        self.memory_assigner: MemoryAssigner = MemoryAssigner()
+
+    ########
+    # Root #
+    ########
     @_("PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON")
     def root(self, p):
         return (f"root {p[1]}", p[3], p[5])
@@ -32,7 +48,6 @@ class EnteParser(Parser):
         # init function symbol table
         # init quadruples
         self.quadruples.add("GOTO", -1, -1, -1)
-        # TODO: init jump stack
 
         scope = "global"
         self.scope.append(scope)
@@ -50,7 +65,6 @@ class EnteParser(Parser):
 
     @_("")
     def seen_global(self, p):
-        print("done with global")
         self.scope.pop()
         return p
 
@@ -106,7 +120,8 @@ class EnteParser(Parser):
 
     @_("")
     def seen_params(self, p):
-        self.scope.pop()
+        if self.scope:
+            self.scope.pop()
 
     @_(
         "VOID ID LPAREN at_params params seen_params RPAREN LBRACE at_func block seen_func RBRACE SEMICOLON",
@@ -164,14 +179,41 @@ class EnteParser(Parser):
         "condition",
         "loop",
         "do_while",
-        "block",
+        "LBRACE block RBRACE",
     )
     def statement(self, p):
         return p[0]
 
-    @_("LET ID ASSIGN expression")
+    @_("ID ASSIGN in_assign expression")
     def assign(self, p):
+        if not self.operators.is_empty() and self.operators.peek() == Op.ASSIGN:
+            operator = self.operators.pop()
+
+            right_operand = self.operands.pop()
+            right_type = self.operand_types.pop()
+
+            left_operand = self.operands.pop()
+            left_type = self.operand_types.pop()
+
+            # validate semantics here
+            result_type = validate_semantics(left_type, right_type, operator)
+            if result_type == "error":
+                raise Exception(
+                    f"type mismatch: {left_operand} {operator} {right_type}"
+                )
+
+            self.quadruples.add(operator, left_operand, right_operand, -1)
+
+            self.operand_types.append(result_type)
+
         return p
+
+    @_("")
+    def in_assign(self, p):
+        self.operands.append(p[-2])
+        # TODO: look up symbol in table
+        self.operand_types.append("int")
+        self.operators.append(Op.ASSIGN)
 
     @_("WHILE LPAREN expression RPAREN LBRACE block RBRACE")
     def loop(self, p):
@@ -193,7 +235,7 @@ class EnteParser(Parser):
     def do_while(self, p):
         return p
 
-    ################################################
+    ################################################par
     # Expression -> Exp -> Term -> Factor -> Const #
     ################################################
     @_("exp", "exp LESSER exp", "exp GREATER exp")
@@ -202,17 +244,68 @@ class EnteParser(Parser):
 
     @_("term exp_operator")
     def exp(self, p):
+        if not self.operators.is_empty() and self.operators.peek() in [
+            Op.ADD,
+            Op.SUBTRACT,
+        ]:
+            operator = self.operators.pop()
+
+            right_operand = self.operands.pop()
+            right_type = self.operand_types.pop()
+
+            left_operand = self.operands.pop()
+            left_type = self.operand_types.pop()
+
+            # validate semantics here
+            result_type = validate_semantics(left_type, right_type, operator)
+            if result_type == "error":
+                raise Exception(
+                    f"type mismatch: {left_operand} {operator} {right_type}"
+                )
+
+            result = f"t-{self.quadruples.get_index()+1}"
+
+            self.quadruples.add(operator, left_operand, right_operand, result)
+
+            self.operands.append(result)
+            self.operand_types.append(result_type)
+
         return p
 
-    @_("PLUS exp", "MINUS exp", "empty")
+    @_("PLUS seen_operator exp", "MINUS seen_operator exp", "empty")
     def exp_operator(self, p):
         return p
 
     @_("factor term_operator")
     def term(self, p):
+        if not self.operators.is_empty() and self.operators.peek() in [
+            Op.MULTIPLY,
+            Op.DIVIDE,
+        ]:
+            operator = self.operators.pop()
+
+            right_operand = self.operands.pop()
+            right_type = self.operand_types.pop()
+
+            left_operand = self.operands.pop()
+            left_type = self.operand_types.pop()
+
+            # validate semantics here
+            result_type = validate_semantics(left_type, right_type, operator)
+            if result_type == "error":
+                raise Exception(
+                    f"type mismatch: {left_operand} {operator} {right_type}"
+                )
+
+            result = f"t-{self.quadruples.get_index()+1}"
+
+            self.quadruples.add(operator, left_operand, right_operand, result)
+
+            self.operands.append(result)
+            self.operand_types.append(result_type)
         return p
 
-    @_("MULTIPLY term", "DIVIDE term", "empty")
+    @_("MULTIPLY seen_operator term", "DIVIDE seen_operator term", "empty")
     def term_operator(self, p):
         return p
 
@@ -220,8 +313,67 @@ class EnteParser(Parser):
     def factor(self, p):
         return p
 
-    @_("PLUS NUMBER", "MINUS NUMBER", "PLUS ID", "MINUS ID", "NUMBER", "STRING", "ID")
+    @_("")
+    def seen_operator(self, p):
+        operator = p[-1]
+
+        match operator:
+            case "+":
+                self.operators.append(Op.ADD)
+            case "-":
+                self.operators.append(Op.SUBTRACT)
+            case "*":
+                self.operators.append(Op.MULTIPLY)
+            case "/":
+                self.operators.append(Op.DIVIDE)
+            case _:
+                print(f"invalid operator {operator}")
+
+    @_(
+        "PLUS seen_operator ID",
+        "MINUS seen_operator ID",
+        "PLUS seen_operator const_num",
+        "MINUS seen_operator const_num",
+        "const_num",
+        "const_string",
+        "const_id",
+    )
     def const(self, p):
+        return p
+
+    @_("const_int", "const_float")
+    def const_num(self, p):
+        return p
+
+    @_("NUMBER")
+    def const_int(self, p):
+        addr = self.memory_assigner.assign("c_int", p[0])
+        self.operands.append(addr)
+        self.operand_types.append("int")
+        return p
+
+    @_("FLOAT_NUMBER")
+    def const_float(self, p):
+        addr = self.memory_assigner.assign("c_float", p[0])
+        self.operands.append(addr)
+        self.operand_types.append("float")
+        return p
+
+    @_("STRING")
+    def const_string(self, p):
+        addr = self.memory_assigner.assign("c_string", p[0])
+        self.operands.append(addr)
+        self.operand_types.append("string")
+        return p
+
+    @_("ID")
+    def const_id(self, p):
+        # look up id in symbol table
+        # if not available, id does not exist, throw error
+        # symbol table will contain address and type
+        # push to stacks
+
+        print("not implemented")
         return p
 
     #########

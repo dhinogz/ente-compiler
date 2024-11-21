@@ -3,9 +3,8 @@ from parser import EnteParser
 from pathlib import Path
 import typer
 from typing_extensions import Annotated
-from typing import Optional
 
-from quadruples import Quadruple, QuadrupleManager
+from quadruples import Quadruple
 from vm import MemoryManager, VirtualMachine
 
 cli = typer.Typer(no_args_is_help=True)
@@ -31,6 +30,11 @@ def generate_ast(
     parser = EnteParser()
     res = parser.parse(lexer.tokenize(text))
 
+    constant_table, counter_table = parser.memory_assigner.output()
+    print(f"counter table {counter_table}\n")
+    print(f"constant table {constant_table}\n")
+    print(f"quadruples {parser.quadruples}\n")
+
     graph = draw_ast(res)
     output_filename = "tmp/ast_visualization"
     graph.render(output_filename, view=True)
@@ -42,11 +46,8 @@ def test_cli(file: Annotated[Path, typer.Argument()]):
 
     lexer = EnteLexer()
     parser = EnteParser()
-    res = parser.parse(lexer.tokenize(text))
+    parser.parse(lexer.tokenize(text))
 
-    print(parser.scope)
-    print(parser.directory)
-    print(parser.types)
     print(parser.quadruples)
 
 @cli.command("vm")
