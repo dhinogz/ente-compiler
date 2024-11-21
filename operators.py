@@ -1,25 +1,25 @@
 from enum import IntEnum
 
 class Operator(IntEnum):
-    SUBTRACT = 1        # 1
-    ADD = 2             # 2
-    MULTIPLY = 3        # 3
-    DIVIDE = 4          # 4
-    LESS_THAN = 5       # 5
-    GREATER_THAN = 6    # 6
-    LESS_EQUAL = 7      # 7
-    GREATER_EQUAL = 8   # 8
-    EQUAL = 9           # 9
-    NOT_EQUAL = 10      # 10
-    ASSIGN = 11         # 11
-    PRINT = 12          # 12
-    GOTO = 13           # 13
-    GOTOF = 14          # 14
-    GOTOT = 15          # 15
-    GOSUB = 16          # 16
-    ERA = 17            # 17
-    ENDFUNC = 18        # 18
-    PARAM = 19          # 19
+    SUBTRACT = 1
+    ADD = 2             
+    MULTIPLY = 3        
+    DIVIDE = 4          
+    LESS_THAN = 5       
+    GREATER_THAN = 6    
+    LESS_EQUAL = 7      
+    GREATER_EQUAL = 8   
+    EQUAL = 9           
+    NOT_EQUAL = 10     
+    PRINT = 11          
+    GOTO = 12           
+    GOTOF = 13          
+    GOTOT = 14          
+    GOSUB = 15          
+    ERA = 16           
+    ENDFUNC = 17        
+    PARAM = 18         
+    ASSIGN = 19         
 
 
 def perform_operation(operator: Operator, left_operand: int, right_operand: int) -> int | float | bool:
