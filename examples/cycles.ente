@@ -3,14 +3,14 @@ program cycle;
 var x: int;
 
 main {
-    let x = 0;
+    x = 0;
     while (x < 5) {
-        let x = x + 1; 
+        x = x + 1; 
         write(x);
     };
 
     do {
-        let x = x - 1;
+        x = x - 1;
         write(x);
     } while (x > 0);
 };
