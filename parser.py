@@ -292,7 +292,7 @@ class EnteParser(Parser):
             self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
             self.jumps.append(self.quadruples.current_index())
 
-    @_( # type: ignore
+    @_(  # type: ignore
         "ELSE seen_else LBRACE block RBRACE SEMICOLON seen_end_condition",
         "SEMICOLON seen_end_condition",
     )
