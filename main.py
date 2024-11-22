@@ -5,11 +5,15 @@ import typer
 from lexer import EnteLexer
 from memory import MemoryManager
 from parser import EnteParser
-
 from quadruples import Quadruple
 from vm import VirtualMachine
 
-cli = typer.Typer(no_args_is_help=True)
+cli = typer.Typer(
+    no_args_is_help=True,
+    help="Welcome to Ente CLI!\n\n"
+    "This tool allows you to compile, run, and visualize ASTs for Ente programs.",
+)
+
 
 TMP_PATH = "tmp/a.en"
 
@@ -35,22 +39,22 @@ def build_bytecode(file):
                     bytecode.write("~\n")
                     bytecode.write(f"{t}\n")
                     for t2, c2 in c.items():
-                        bytecode.write(f"{t2}|{c2}\n")  # Updated separator to '|'
+                        bytecode.write(f"{t2}|{c2}\n")
                 else:
-                    bytecode.write(f"{t}|{c}\n")  # Updated separator to '|'
+                    bytecode.write(f"{t}|{c}\n")
 
         # Write constants section
         bytecode.write(":\n")
         for value, address in output[1].items():
-            bytecode.write(f"{address}|{value}\n")  # Updated separator to '|'
+            bytecode.write(f"{address}|{value}\n")
 
         # Write quadruples section
         bytecode.write(":\n")
         bytecode.write(str(output[2]))
 
 
-@cli.command("run")
-def run(file: Annotated[Path, typer.Argument()]):
+@cli.command("run", help="Compile and execute a source file.")
+def run(file: Annotated[Path, typer.Argument(help="Path to the source file")]):
     try:
         build_bytecode(file)
     except Exception as e:
@@ -59,13 +63,13 @@ def run(file: Annotated[Path, typer.Argument()]):
     run_vm(TMP_PATH)
 
 
-@cli.command("build")
-def build(file: Annotated[Path, typer.Argument()]):
+@cli.command("compile", help="Compile a source file into bytecode.")
+def compile(file: Annotated[Path, typer.Argument(help="Path to the source file")]):
     build_bytecode(file)
 
 
-@cli.command("exec")
-def execute(file: Annotated[Path, typer.Argument()]):
+@cli.command("exec", help="Execute a bytecode file.")
+def execute(file: Annotated[Path, typer.Argument(help="Path to the bytecode file")]):
     run_vm(file)
 
 
@@ -122,9 +126,11 @@ def run_vm(file):
     vm.execute(quads)
 
 
-@cli.command("viz")
+@cli.command(
+    "viz", help="Generate a visual representation of the AST for a source file."
+)
 def generate_ast(
-    file: Annotated[Path, typer.Argument()],
+    file: Annotated[Path, typer.Argument(help="Path to the source file")],
 ):
     from utils.ast_viz import draw_ast
 
