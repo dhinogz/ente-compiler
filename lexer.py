@@ -2,42 +2,44 @@ from sly import Lexer
 
 
 class EnteLexer(Lexer):
+
+    
     tokens = {
         # Identifiers and literals
-        ID,  # identifier
-        NUMBER,  # numeric literal
-        FLOAT_NUMBER,  # float literal
-        STRING,  # string literal
+        ID,  # identifier # type: ignore
+        NUMBER,  # numeric literal # type: ignore
+        FLOAT_NUMBER,  # float literal # type: ignore
+        STRING,  # string literal # type: ignore
         # Operators
-        PLUS,  # +
-        MINUS,  # -
-        MULTIPLY,  # *
-        DIVIDE,  # /
-        ASSIGN,  # =
-        LESSER,  # <
-        GREATER,  # >
+        PLUS,  # + # type: ignore
+        MINUS,  # - # type: ignore
+        MULTIPLY,  # * # type: ignore
+        DIVIDE,  # / # type: ignore
+        ASSIGN,  # = # type: ignore
+        LESSER,  # < # type: ignore
+        GREATER,  # > # type: ignore
         # Delimiters
-        LPAREN,  # (
-        RPAREN,  # )
-        LBRACE,  # {
-        RBRACE,  # }
-        COLON,  # :
-        SEMICOLON,  # ;
-        COMMA,  # ,
+        LPAREN,  # ( # type: ignore
+        RPAREN,  # ) # type: ignore
+        LBRACE,  # { # type: ignore
+        RBRACE,  # } # type: ignore
+        COLON,  # : # type: ignore
+        SEMICOLON,  # ; # type: ignore
+        COMMA,  # , # type: ignore
         # Keywords
-        PROGRAM,  # 'program'
-        MAIN,  # 'main'
-        WRITE,  # 'write'
-        INT,  # 'int'
-        FLOAT,  # 'float'
-        STRING,  # 'string'
-        VAR,  # 'var'
-        END,  # 'end'
-        VOID,  # 'void'
-        IF,  # 'if'
-        ELSE,  # 'else'
-        WHILE,  # 'while'
-        DO,  # 'do'
+        PROGRAM,  # 'program' # type: ignore
+        MAIN,  # 'main' # type: ignore
+        WRITE,  # 'write' # type: ignore
+        INT,  # 'int' # type: ignore
+        FLOAT,  # 'float' # type: ignore
+        STRING,  # 'string' # type: ignore
+        VAR,  # 'var' # type: ignore
+        END,  # 'end' # type: ignore
+        VOID,  # 'void' # type: ignore
+        IF,  # 'if' # type: ignore
+        ELSE,  # 'else' # type: ignore
+        WHILE,  # 'while' # type: ignore
+        DO,  # 'do' # type: ignore
     }
 
     # String containing ignored characters between tokens
@@ -68,30 +70,30 @@ class EnteLexer(Lexer):
     COMMA = r","
 
     # Keywords
-    ID["program"] = PROGRAM
-    ID["main"] = MAIN
-    ID["write"] = WRITE
-    ID["int"] = INT
-    ID["float"] = FLOAT
+    ID["program"] = PROGRAM # type: ignore
+    ID["main"] = MAIN # type: ignore
+    ID["write"] = WRITE # type: ignore
+    ID["int"] = INT # type: ignore
+    ID["float"] = FLOAT # type: ignore
 
-    ID["var"] = VAR
-    ID["end"] = END
-    ID["void"] = VOID
-    ID["if"] = IF
-    ID["else"] = ELSE
-    ID["while"] = WHILE
-    ID["do"] = DO
+    ID["var"] = VAR # type: ignore
+    ID["end"] = END # type: ignore
+    ID["void"] = VOID # type: ignore
+    ID["if"] = IF # type: ignore
+    ID["else"] = ELSE # type: ignore
+    ID["while"] = WHILE # type: ignore
+    ID["do"] = DO # type: ignore
 
-    @_(r'"[^"]*"')
+    @_(r'"[^"]*"') # type: ignore
     def STRING(self, t):
         # Strip the quotes from the string
         t.value = t.value[1:-1]
         return t
 
-    @_(r"\n+")
+    @_(r"\n+") # type: ignore
     def ignore_newline(self, t):
         self.lineno += t.value.count("\n")
 
-    def error(self, t):
+    def error(self, t): # type: ignore
         print(f"Line {self.lineno-1}: Bad character {t.value[0]}")
         self.index += 1
