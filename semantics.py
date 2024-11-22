@@ -3,9 +3,7 @@ from operators import Operator
 
 SEMANTIC_CUBE = {
     "string": {
-        "string": {
-            "=": "string,"
-        },
+        "string": {"=": "string,"},
     },
     "int": {
         "int": {

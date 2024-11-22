@@ -73,7 +73,7 @@ class EnteLexer(Lexer):
     ID["write"] = WRITE  # type: ignore
     ID["int"] = INT  # type: ignore
     ID["float"] = FLOAT  # type: ignore
-    ID["string"] = STRING # type: ignore
+    ID["string"] = STRING  # type: ignore
 
     ID["var"] = VAR  # type: ignore
     ID["end"] = END  # type: ignore
