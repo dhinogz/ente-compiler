@@ -14,7 +14,6 @@ class VirtualMachine:
 
         while ip < len(quadruples):
             curr = quadruples[ip]
-            print(curr)
 
             left_operand = (
                 self.memory_manager.access(curr.left_operand)

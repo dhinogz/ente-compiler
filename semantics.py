@@ -2,6 +2,11 @@ from operators import Operator
 
 
 SEMANTIC_CUBE = {
+    "string": {
+        "string": {
+            "=": "string,"
+        },
+    },
     "int": {
         "int": {
             "<": "bool",

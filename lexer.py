@@ -7,7 +7,7 @@ class EnteLexer(Lexer):
         ID,  # identifier # type: ignore
         NUMBER,  # numeric literal # type: ignore
         FLOAT_NUMBER,  # float literal # type: ignore
-        STRING,  # string literal # type: ignore
+        STRING_CONSTANT,  # string literal # type: ignore
         # Operators
         PLUS,  # + # type: ignore
         MINUS,  # - # type: ignore
@@ -73,6 +73,7 @@ class EnteLexer(Lexer):
     ID["write"] = WRITE  # type: ignore
     ID["int"] = INT  # type: ignore
     ID["float"] = FLOAT  # type: ignore
+    ID["string"] = STRING # type: ignore
 
     ID["var"] = VAR  # type: ignore
     ID["end"] = END  # type: ignore
@@ -83,7 +84,7 @@ class EnteLexer(Lexer):
     ID["do"] = DO  # type: ignore
 
     @_(r'"[^"]*"')  # type: ignore
-    def STRING(self, t):
+    def STRING_CONSTANT(self, t):
         # Strip the quotes from the string
         t.value = t.value[1:-1]
         return t

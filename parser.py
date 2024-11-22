@@ -104,7 +104,7 @@ class EnteParser(Parser):
 
         return p
 
-    @_("INT", "FLOAT")  # type: ignore
+    @_("INT", "FLOAT", "STRING")  # type: ignore
     def var_type(self, p):
         curr_scope = self.scope.peek()
         curr_scope_table = self.scope_table.lookup(curr_scope)
@@ -168,7 +168,7 @@ class EnteParser(Parser):
 
         return p
 
-    @_("INT", "FLOAT")  # type: ignore
+    @_("INT", "FLOAT", "STRING")  # type: ignore
     def param_type(self, p):
         return p[0]
 
@@ -469,7 +469,7 @@ class EnteParser(Parser):
         self.operand_types.append("float")
         return p
 
-    @_("STRING")  # type: ignore
+    @_("STRING_CONSTANT")  # type: ignore
     def const_string(self, p):
         addr = self.memory_assigner.assign("c_string", p[0])
         self.operands.append(addr)

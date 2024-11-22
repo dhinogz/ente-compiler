@@ -13,6 +13,7 @@ OFFSETS = {
     "c_string": 8000,
     "l_int": 9000,
     "l_float": 10000,
+    "g_string": 11000,
 }
 
 
@@ -30,6 +31,7 @@ class MemoryAssigner:
                 "c_int": OFFSETS["c_int"],
                 "c_float": OFFSETS["c_float"],
                 "c_string": OFFSETS["c_string"],
+                "g_string": OFFSETS["g_string"],
             },
             "local": {},
         }
@@ -124,6 +126,7 @@ class MemoryManager:
                 "c_int": 0,
                 "c_float": 0,
                 "c_string": 0,
+                "g_string": 0,
             },
             "local": {},
         }
@@ -241,8 +244,10 @@ class MemoryManager:
             return "c_string"
         elif address < OFFSETS["l_float"]:
             return "l_int"
-        else:
+        elif address < OFFSETS["g_string"]:
             return "l_float"
+        else:
+            return "g_string"
 
     def __str__(self):
         return str(self.memory)
