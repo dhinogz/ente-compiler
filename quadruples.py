@@ -15,7 +15,6 @@ class Quadruple:
 class QuadrupleManager:
     def __init__(self) -> None:
         self.quadruples: list[Quadruple] = []
-        self.temp_count = 0
 
     def add(self, operator, left_operand, right_operand, result):
         q = Quadruple(operator, left_operand, right_operand, result)
