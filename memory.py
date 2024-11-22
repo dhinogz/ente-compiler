@@ -89,14 +89,6 @@ class MemoryAssigner:
 
 
 class MemorySegment:
-    """
-    This class represents a dynamic memory segment in runtime.
-
-    Attributes:
-    - memory (list): The memory segment.
-    - type (str): The type of memory segment [g_void, g_int, g_float, l_int, l_float, t_int, t_float, t_bool, c_int, c_float, c_string].
-    """
-
     def __init__(self, mem_type, size=0):
         if mem_type not in OFFSETS.keys():
             raise ValueError(f"Invalid memory segment type: {mem_type}")
@@ -105,26 +97,10 @@ class MemorySegment:
         self.mem_type = mem_type
 
     def access(self, address):
-        """
-        Access a memory address.
-
-        Parameters:
-        - address (int): The memory address.
-
-        Returns:
-        - The value at the memory address.
-        """
         index = address - OFFSETS[self.mem_type]
         return self.memory[index] if index < len(self.memory) else None
 
     def assign(self, address, value):
-        """
-        Assign a value to a memory address.
-
-        Parameters:
-        - address (int): The memory address.
-        - value: The value to assign.
-        """
         index = address - OFFSETS[self.mem_type]
         self.memory[index] = value
 
@@ -136,11 +112,6 @@ class MemorySegment:
 
 
 class MemoryManager:
-    """
-    This class manages the memory allocation for variables, parameters and constants in the
-    runtime process.
-    """
-
     def __init__(self):
         self.descriptor = {
             "global": {
@@ -159,13 +130,6 @@ class MemoryManager:
         self.memory = Stack("memory")
 
     def allocate(self, mem_type, size=0):
-        """
-        Allocate memory for a memory segment.
-
-        Parameters:
-        - mem_type (str): The type of memory segment [g_void, g_int, g_float, l_int, l_float, t_int, t_float, t_bool, c_int, c_float, c_string].
-        - size (int): The size of the memory segment.
-        """
         if not mem_type.startswith("l"):
             if len(self.memory) == 0:
                 self.memory.append({})
@@ -174,21 +138,12 @@ class MemoryManager:
             self.memory.items()[-1][mem_type] = MemorySegment(mem_type, size)
 
     def allocate_local(self):
-        """
-        Allocate memory for a local memory segments.
-        """
         self.memory.append({})
 
     def deallocate_local(self):
-        """
-        Deallocate memory for a memory segments.
-        """
         self.memory.pop()
 
     def describe(self, mem_type, size=0, function=None):
-        """
-        Describe a memory segment.
-        """
         if function is not None:
             if function not in self.descriptor["local"]:
                 self.descriptor["local"][function] = {}
@@ -197,12 +152,6 @@ class MemoryManager:
             self.descriptor["global"][mem_type] = size
 
     def access(self, address):
-        """
-        Access a memory address.
-
-        Parameters:
-        - address (int): The memory address.
-        """
         mem_type = self._get_type(address)
 
         if mem_type.startswith("l"):
@@ -228,13 +177,6 @@ class MemoryManager:
         return value
 
     def assign(self, address, value):
-        """
-        Assign a value to a memory address.
-
-        Parameters:
-        - address (int): The memory address.
-        - value: The value to assign.
-        """
         mem_type = self._get_type(address)
 
         if mem_type.startswith("l"):
@@ -254,12 +196,6 @@ class MemoryManager:
         memory_to_access[mem_type].assign(address, value)
 
     def param(self, address):
-        """
-        Copy a address value to a local memory segment.
-
-        Parameters:
-        - address (int): The memory address.
-        """
         mem_type = self._get_type(address)
 
         if mem_type.startswith("l"):
@@ -285,9 +221,6 @@ class MemoryManager:
         target_memory[target_type].assign(OFFSETS[target_type] + index, value)
 
     def _get_type(self, address):
-        """
-        Get string type from memory address.
-        """
         if address < OFFSETS["g_int"]:
             return "g_void"
         elif address < OFFSETS["g_float"]:
