@@ -101,7 +101,19 @@ A quadruple consists of four elements:
 - Right Operand: The second input to the operation (optional, depending on the operator).
 - Result: The location where the operation's result will be stored.
 
-We used them in our neuralgic points in our parser module.
+I generated quadruples when visiting our neuralgic points while parsing.
+
+```python
+class Quadruple:
+    def __init__(self, operator, left_operand, right_operand, result):
+        self.operator = operator
+        self.left_operand = left_operand
+        self.right_operand = right_operand
+        self.result = result
+
+    def __str__(self) -> str:
+        return f"{self.operator} {self.left_operand} {self.right_operand} {self.result}"
+```
 
 ### memory.py
 The memory.py file handles memory management for the "Patito" language compiler. This includes assigning memory addresses for variables, constants, and temporary values, as well as managing the allocation and deallocation of memory during execution. The file introduces several classes to streamline these operations.
@@ -141,7 +153,10 @@ The semantics module validates the compatibility of operations between different
 ### operators.py
 The operators module defines an enumeration of operators that can be used in various operations, such as arithmetic, comparisons, and control flow. The perform_operation function executes the specified operation between two operands based on the given operator and returns the result, supporting operations like addition, subtraction, and comparisons.
 
-## Requirements
+
+## Using Ente Compiler
+
+### Running
 
 ```bash
 python -m venv .venv
@@ -155,7 +170,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run
+### Run
 
 Output available commands
 ```bash
@@ -163,10 +178,13 @@ python main.py
 ```
 
 ```bash
-python main.py build $filename
+python main.py build $source_code
 ```
 
 ```bash
-python main.py viz $filename
+python main.py exec $byte_code
 ```
 
+```bash
+python main.py run $source_code
+```
