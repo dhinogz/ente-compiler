@@ -84,3 +84,59 @@ class MemoryAssigner:
             for key2, value2 in value.items():
                 print(f"  {key2}: {value2}")
 
+
+class Memory:
+    def __init__(self) -> None:
+        # Initialize an empty memory dictionary to store values at pointers
+        self.memory = {}
+
+    def allocate(self, pointer: int, value: int | float | bool) -> None:
+        # Allocate memory for a pointer with a value
+        self.memory[pointer] = value
+
+    def deallocate(self, pointer: int) -> None:
+        # Deallocate memory for a pointer (remove from memory)
+        if pointer in self.memory:
+            del self.memory[pointer]
+
+    def access(self, pointer: int) -> int | None:
+        # Access a memory location by pointer, returns None if not found
+        return self.memory.get(pointer, None)
+
+    def __repr__(self):
+        return f"Memory({self.memory})"
+
+
+class MemoryManager:
+    def __init__(self) -> None:
+        # Initialize the memory and local memory stack
+        self.memory = Memory()
+        self.local_memory_stack = []
+
+    def access(self, pointer: int) -> int | None:
+        return self.memory.access(pointer)
+
+    def access_operands(
+        self, pointer_left: int, pointer_right: int
+    ) -> tuple[int | None, int | None]:
+        # Access two operands from memory
+        return self.access(pointer_left), self.access(pointer_right)
+
+    def allocate_local(self, function_name: str) -> None:
+        self.local_memory_stack.append({})  # Start a new scope for local variables
+
+    def deallocate_local(self) -> None:
+        if self.local_memory_stack:
+            self.local_memory_stack.pop()  # Remove the most recent local scope
+
+    def param(self, param_value: int | float | bool) -> None:
+        # Add a parameter to the local memory scope
+        if self.local_memory_stack:
+            current_scope = self.local_memory_stack[-1]
+            param_pointer = len(current_scope)
+            current_scope[param_pointer] = param_value
+        else:
+            raise ValueError("No local memory scope to add a parameter")
+
+    def __repr__(self):
+        return f"MemoryManager({self.memory}, local_memory_stack={self.local_memory_stack})"
