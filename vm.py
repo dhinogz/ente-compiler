@@ -1,12 +1,12 @@
+from memory import MemoryManager
 from quadruples import Quadruple
 from operators import Operator, perform_operation
-from memory import MemoryManager
 from stack import Stack
 
 
 class VirtualMachine:
-    def __init__(self) -> None:
-        self.memory_manager = MemoryManager()
+    def __init__(self, memory_manager: MemoryManager) -> None:
+        self.memory_manager = memory_manager
         self.function_exit = Stack("function_exit")
 
     def execute(self, quadruples: list[Quadruple]):
@@ -14,10 +14,19 @@ class VirtualMachine:
 
         while ip < len(quadruples):
             curr = quadruples[ip]
-            print(f"Executing: {curr}")
+            print(curr)
 
-            left_operand = self.memory_manager.access(curr.left_operand)
-            right_operand = self.memory_manager.access(curr.right_operand)
+            left_operand = (
+                self.memory_manager.access(curr.left_operand)
+                if curr.left_operand != -1
+                else None
+            )
+            right_operand = (
+                self.memory_manager.access(curr.right_operand)
+                if curr.right_operand != -1
+                else None
+            )
+
             result = curr.result
 
             # Handling operations
@@ -53,6 +62,8 @@ class VirtualMachine:
                 case Operator.PARAM:
                     self.memory_manager.param(curr.left_operand)
                     print(f"Parameter {left_operand} added to function memory")
+                case Operator.ASSIGN:
+                    result = self.memory_manager.access(curr.left_operand)
                 case _:
                     try:
                         if left_operand is None or right_operand is None:
@@ -67,8 +78,7 @@ class VirtualMachine:
                             f"Unsupported operator: {curr.operator}"
                         ) from e
 
-            if result is not None:
-                self.memory_manager.memory.allocate(curr.result, result)
-                print(f"Result stored at {curr.result}: {result}")
+            if result != -1:
+                self.memory_manager.assign(curr.result, result)
 
             ip += 1

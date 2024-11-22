@@ -142,6 +142,9 @@ OPERATOR_MAPPING = {
 
 
 def validate_semantics(left_operand_type, right_operand_type, operator) -> str:
+    left_operand_type = left_operand_type.split(".")[-1]
+    right_operand_type = right_operand_type.split(".")[-1]
+
     operator_symbol = OPERATOR_MAPPING.get(operator)
     if not operator_symbol:
         return "error"
@@ -150,9 +153,6 @@ def validate_semantics(left_operand_type, right_operand_type, operator) -> str:
         result_type = SEMANTIC_CUBE[left_operand_type][right_operand_type][
             operator_symbol
         ]
-        print(
-            f"{left_operand_type} {operator_symbol} {right_operand_type} -> {result_type}"
-        )
         return result_type
     except KeyError:
         print(

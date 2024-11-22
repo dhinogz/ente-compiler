@@ -20,7 +20,7 @@ class QuadrupleManager:
         q = Quadruple(operator, left_operand, right_operand, result)
         self.quadruples.append(q)
 
-    def get_index(self) -> int:
+    def current_index(self) -> int:
         return len(self.quadruples) - 1
 
     def fill(self, index, value):
@@ -31,3 +31,6 @@ class QuadrupleManager:
         for q in self.quadruples:
             res.append(str(q))
         return "\n".join(res)
+
+    def __repr__(self) -> str:
+        return str(self)

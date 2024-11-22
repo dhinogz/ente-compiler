@@ -27,5 +27,26 @@ class Stack:
     def clear(self):
         self.stack.clear()
 
+    def items(self):
+        return self.stack
+
+    def first(self):
+        if self.stack:
+            return self.stack[0]
+        else:
+            return None
+
     def __str__(self):
         return str(self.stack)
+
+    def __iter__(self):
+        return iter(self.stack)
+
+    def __bool__(self):
+        return not self.is_empty()
+
+    def __len__(self):
+        return len(self.stack)
+
+    def __reversed__(self):
+        return reversed(self.stack)

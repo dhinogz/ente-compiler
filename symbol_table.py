@@ -1,18 +1,16 @@
 class Symbol:
-    def __init__(self, name, data_type, address=None, child=None, index=None):
+    def __init__(
+        self,
+        name="undeclared",
+        data_type="undeclared",
+        address=None,
+        child=None,
+        index=None,
+    ):
         self.name = name
         self.data_type = data_type
         self.address = address
         self.child = child
-        self.index = index
-
-    def update_index(self, index):
-        """
-        Update the index of the symbol.
-
-        Parameters:
-        - index (int): The new index of the symbol.
-        """
         self.index = index
 
     def __str__(self):
@@ -20,6 +18,9 @@ class Symbol:
 
     def __repr__(self):
         return str(self)
+
+    def __bool__(self):
+        return self.name != "undeclared"
 
 
 class SymbolTable:
