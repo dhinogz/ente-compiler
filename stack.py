@@ -3,29 +3,29 @@ class Stack:
         self.name = name
         self.stack = []
 
-    def append(self, item: str | int | dict) -> None:
+    def append(self, item):
         self.stack.append(item)
 
-    def pop(self) -> str | int | dict | None:
+    def pop(self):
         if self.is_empty():
             return None
         return self.stack.pop()
 
-    def peek(self) -> str | int | dict | None:
+    def peek(self):
         if self.is_empty():
             return None
         return self.stack[-1]
 
-    def last(self) -> str | int | dict | None:
+    def last(self):
         if self.is_empty():
             return None
         return self.stack[0]
 
-    def is_empty(self) -> bool:
+    def is_empty(self):
         return len(self.stack) == 0
 
-    def clear(self) -> None:
+    def clear(self):
         self.stack.clear()
 
-    def __str__(self) -> str:
+    def __str__(self):
         return str(self.stack)
