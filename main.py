@@ -11,9 +11,9 @@ from vm import VirtualMachine
 
 cli = typer.Typer(no_args_is_help=True)
 
+TMP_PATH = "tmp/a.en"
 
-@cli.command("build")
-def build(file: Annotated[Path, typer.Argument()]):
+def build_bytecode(file):
     if not file.is_file():
         print("not a file")
         raise typer.Abort()
@@ -25,13 +25,9 @@ def build(file: Annotated[Path, typer.Argument()]):
     parser.parse(lexer.tokenize(text))
 
     constant_table, counter_table = parser.memory_assigner.output()
-    print(f"\ncounter table {counter_table}\n")
-    print(f"constant table {constant_table}\n")
-    print(f"quadruples {parser.quadruples}\n")
-
     output = (counter_table, constant_table, parser.quadruples)
 
-    with open(f"out/test.en", "w") as bytecode:
+    with open(TMP_PATH, "w") as bytecode:
         for _, table in output[0].items():
             for t, c in table.items():
                 if type(c) == dict:
@@ -51,9 +47,29 @@ def build(file: Annotated[Path, typer.Argument()]):
         bytecode.write(":\n")
         bytecode.write(str(output[2]))
 
+@cli.command("run")
+def run(file: Annotated[Path, typer.Argument()]):
+    try:
+        build_bytecode(file)
+    except Exception as e:
+        raise Exception(f"could not compile file: {e}")
+
+    run_vm(TMP_PATH)
+
+
+@cli.command("build")
+def build(file: Annotated[Path, typer.Argument()]):
+    build_bytecode(file)
+
 
 @cli.command("exec")
-def run_vm(file: Annotated[Path, typer.Argument()]):
+def execute(file: Annotated[Path, typer.Argument()]):
+    run_vm(file)
+
+def run_vm(file):
+    if isinstance(file, str):
+        file = Path(file)
+
     if not file.is_file():
         print("not a file")
         raise typer.Abort()
