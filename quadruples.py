@@ -32,4 +32,3 @@ class QuadrupleManager:
         for q in self.quadruples:
             res.append(str(q))
         return "\n".join(res)
-

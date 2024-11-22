@@ -6,7 +6,7 @@ class EnteLexer(Lexer):
         # Identifiers and literals
         ID,  # identifier
         NUMBER,  # numeric literal
-        FLOAT_NUMBER, # float literal
+        FLOAT_NUMBER,  # float literal
         STRING,  # string literal
         # Operators
         PLUS,  # +
