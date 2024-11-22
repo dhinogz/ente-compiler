@@ -4,11 +4,10 @@ from lexer import EnteLexer
 from memory import MemoryAssigner
 from operators import Operator as Op
 
-# TODO: from symbol_table import SymbolTable, Symbol
+from symbol_table import SymbolTable, Symbol
 from quadruples import QuadrupleManager
 from semantics import validate_semantics
 from stack import Stack
-from symbol_table import SymbolTable
 
 
 class EnteParser(Parser):
@@ -25,37 +24,44 @@ class EnteParser(Parser):
 
     def __init__(self):
         super().__init__()
+
+        self.scope_table = SymbolTable()
+        self.memory_assigner = MemoryAssigner()
+
+        # Stacks for symbol table building
+        self.scope = Stack("scope")
+        self.variables = Stack("variables")
+
         self.quadruples = QuadrupleManager()
-        self.scope = []
-        self.directory = {}
 
         # Stacks for quadruple building
         self.operands = Stack("operands")
         self.operand_types = Stack("operand_types")
         self.operators = Stack("operators")
-
-        self.symbol_table = SymbolTable()
-        self.memory_assigner: MemoryAssigner = MemoryAssigner()
+        self.jumps = Stack("jumps")
 
     ########
     # Root #
     ########
-    @_("PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON")  # type: ignore
+    @_("PROGRAM prog_init SEMICOLON global_scope main END SEMICOLON")  # type: ignore
     def root(self, p):
-        return (f"root {p[1]}", p[3], p[5])
+        return (f"root {p[1]}", p[3], p[4])
 
     ########################
     # Initialize a program #
     ########################
     @_("ID")  # type: ignore
     def prog_init(self, p):
-        # init function symbol table
-        # init quadruples
-        self.quadruples.add("GOTO", -1, -1, -1)
+        # we initialize our GOTO line in our quadruples
+        # we'll later fill in where it has to jump to start main
+        self.quadruples.add(Op.GOTO, -1, -1, -1)
 
-        scope = "global"
-        self.scope.append(scope)
-        self.directory[scope] = []
+        # global scope symbol table contains a child symbol table for storing it's functions and variables
+        self.scope_table.declare(
+            Symbol(data_type="table.global", name=p[0], child=SymbolTable())
+        )
+        self.scope.append(p[0])
+        self.jumps.append(self.quadruples.current_index())
 
         return p[0]
 
@@ -66,98 +72,117 @@ class EnteParser(Parser):
     def global_scope(self, p):
         return p
 
-    @_("")  # type: ignore
-    def seen_global(self, p):
-        self.scope.pop()
-        return p
-
     #############
     # Variables #
     #############
     @_(  # type: ignore
-        "VAR vars_declare",
+        "VAR in_vars vars_declare",
         "empty",
     )
     def vars(self, p):
         return p
 
+    @_("")  # type: ignore
+    def in_vars(self, _):
+        curr_scope = self.scope.peek() if not self.scope.is_empty() else "global"
+        curr_scope_table = self.scope_table.lookup(curr_scope)
+        if not curr_scope_table.child:
+            # init symbol table for scope
+            curr_scope_table.child = SymbolTable()
+            self.scope_table.update(curr_scope_table)
+
     @_(  # type: ignore
         "var_list COLON var_type SEMICOLON",
-        "var_list COLON var_type SEMICOLON vars_declare",
+        "var_list COLON var_type SEMICOLON vars",
     )
     def vars_declare(self, p):
         return p
 
     @_("ID", "ID COMMA var_list")  # type: ignore
     def var_list(self, p):
-        curr_scope = self.scope[-1] if self.scope else "global"
-        self.directory[curr_scope].append(p[0])
+        self.variables.append(p[0])
 
         return p
 
     @_("INT", "FLOAT")  # type: ignore
     def var_type(self, p):
-        curr_scope = self.scope[-1] if self.scope else "global"
-        print(curr_scope)
+        curr_scope = self.scope.peek()
+        curr_scope_table = self.scope_table.lookup(curr_scope)
+
+        for var in self.variables:
+            if len(self.scope) > 1:
+                # if not global scope
+                mem_addr = self.memory_assigner.assign_local(
+                    curr_scope_table.address, f"l_{p[0]}"
+                )
+            else:
+                mem_addr = self.memory_assigner.assign(f"g_{p[0]}")
+
+            var_symbol = Symbol(name=var, data_type=f"var.{p[0]}", address=mem_addr)
+            curr_scope_table.child.declare(var_symbol)
+            self.scope_table.update(curr_scope_table)
+
+        self.variables.clear()
 
         return p
 
     #############
     # Functions #
     #############
-    @_("ID COLON var_type", "ID COLON var_type COMMA params")  # type: ignore
-    def params(self, p):
-        curr_scope = self.scope[-1] if self.scope else "global"
-        self.directory[curr_scope].append(p[0])
-
-        return p
-
-    @_("")  # type: ignore
-    def at_params(self, p):
-        func = p[-2]
-        scope = "params"
-        self.scope.append(scope)
-        self.directory[scope] = []
-        return p
-
-    @_("")  # type: ignore
-    def seen_params(self, _):
-        if self.scope:
-            self.scope.pop()
-
     @_(  # type: ignore
-        "VOID ID LPAREN at_params params seen_params RPAREN LBRACE at_func block seen_func RBRACE SEMICOLON",
+        "VOID ID seen_func_id LPAREN params RPAREN LBRACE block RBRACE seen_func SEMICOLON",
         "empty",
     )
     def funcs(self, p):
         return p
 
-    @_("")  # type: ignore
-    def at_func(self, p):
-        scope = p[-7]
-        self.scope.append(scope)
-        self.directory[scope] = []
+    @_("")  # type: ignorepars
+    def seen_func(self, _):
+        self.quadruples.add(Op.ENDFUNC, -1, -1, -1)
+        self.scope.pop()
 
     @_("")  # type: ignore
-    def seen_func(self, _):
-        self.scope.pop()
+    def seen_func_id(self, p):
+        mem_addr = self.memory_assigner.assign("g_void")
+        self.scope_table.declare(
+            Symbol(
+                data_type="table.local",
+                name=p[-1],
+                child=SymbolTable(),
+                address=mem_addr,
+            )
+        )
+        self.scope.append(p[-1])
+
+    @_("ID COLON param_type", "ID COLON param_type COMMA params")  # type: ignore
+    def params(self, p):
+        curr_scope = self.scope.peek()
+        mem_addr = self.memory_assigner.assign_local(curr_scope, f"l_{p[2]}")
+
+        param_symbol = Symbol(name=p[0], data_type=f"param.{p[2]}", address=mem_addr)
+
+        curr_scope_table = self.scope_table.lookup(curr_scope)
+        curr_scope_table.child.declare(param_symbol)
+
+        self.scope_table.update(curr_scope_table)
+
+        return p
+
+    @_("INT", "FLOAT")  # type: ignore
+    def param_type(self, p):
+        return p[0]
 
     ########
     # Main #
     ########
-    @_("MAIN LBRACE at_main block seen_main RBRACE SEMICOLON", "empty")  # type: ignore
+    @_("MAIN LBRACE at_main block RBRACE SEMICOLON", "empty")  # type: ignore
     def main(self, p):
         return p
 
     @_("")  # type: ignore
     def at_main(self, _):
-        scope = "main"
-        self.scope.append(scope)
-        self.directory[scope] = []
-
-    @_("")  # type: ignore
-    def seen_main(self, _):
-        self.scope.pop()
+        main_quadruple_idx = self.jumps.pop()
+        self.quadruples.fill(main_quadruple_idx, self.quadruples.current_index() + 1)
 
     #########
     # Block #
@@ -189,44 +214,103 @@ class EnteParser(Parser):
         if not self.operators.is_empty() and self.operators.peek() == Op.ASSIGN:
             operator = self.operators.pop()
 
-            right_operand = self.operands.pop()
-            right_type = self.operand_types.pop()
+            operand = self.operands.pop()
+            operand_type = self.operand_types.pop()
 
-            left_operand = self.operands.pop()
-            left_type = self.operand_types.pop()
+            assignee = self.operands.pop()
+            assignee_type = self.operand_types.pop()
 
-            result_type = validate_semantics(left_type, right_type, operator)
+            result_type = validate_semantics(assignee_type, operand_type, operator)
             if result_type == "error":
-                raise Exception(
-                    f"type mismatch: {left_operand} {operator} {right_type}"
-                )
+                raise Exception(f"type mismatch: {assignee} {operator} {operand_type}")
 
-            self.quadruples.add(operator, left_operand, right_operand, -1)
+            self.quadruples.add(operator, operand, -1, assignee)
+
+            self.operands.append(assignee)
+            self.operand_types.append(result_type)
 
         return p
 
     @_("")  # type: ignore
     def in_assign(self, p):
-        self.operands.append(p[-2])
-        # TODO: look up symbol in table
+        id_symbol = Symbol()
+        for scope in reversed(self.scope):
+            scope_symbols = self.scope_table.lookup(scope).child
+            if scope_symbols.lookup(p[-2]):
+                id_symbol = scope_symbols.lookup(p[-2])
+                break
 
-        self.operand_types.append("int")
+        if not id_symbol:
+            raise Exception(f"Symbol {p[-2]} is undeclared")
+
         self.operators.append(Op.ASSIGN)
+        self.operands.append(id_symbol.address)
+        self.operand_types.append(id_symbol.data_type)
 
-    @_("WHILE LPAREN expression RPAREN LBRACE block RBRACE")  # type: ignore
+    @_(  # type: ignore
+        "WHILE LPAREN in_loop expression seen_loop_expression RPAREN LBRACE block RBRACE"
+    )
     def loop(self, p):
+        false = self.jumps.pop()
+        end = self.jumps.pop()
+        self.quadruples.add(Op.GOTO, -1, -1, end)
+        self.quadruples.fill(false, self.quadruples.current_index() + 1)
         return p
+
+    @_("")  # type: ignore
+    def in_loop(self, _):
+        self.jumps.append(self.quadruples.current_index() + 1)
+
+    @_("")  # type: ignore
+    def seen_loop_expression(self, _):
+        expression_type = self.operand_types.pop()
+
+        if expression_type != "bool":
+            raise Exception("Cycle expression must be of type bool")
+        else:
+            expression_result = self.operands.pop()
+            self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
+            self.jumps.append(self.quadruples.current_index())
 
     @_("WRITE LPAREN expression RPAREN")  # type: ignore
     def write(self, p):
+        self.quadruples.add(Op.PRINT, self.operands.pop(), -1, -1)
+        self.operand_types.pop()
         return p
 
-    @_("IF LPAREN expression RPAREN LBRACE block RBRACE else_condition")  # type: ignore
+    @_("IF LPAREN expression RPAREN seen_condition LBRACE block RBRACE optional_else")  # type: ignore
     def condition(self, p):
         return p
 
-    @_("ELSE LBRACE block RBRACE", "empty")  # type: ignore
-    def else_condition(self, p):
+    @_("")  # type: ignore
+    def seen_condition(self, _):
+        expression_type = self.operand_types.pop()
+        if expression_type != "bool":
+            raise Exception("Condition expression must be of type bool")
+        else:
+            expression_result = self.operands.pop()
+            self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
+            self.jumps.append(self.quadruples.current_index())
+
+    @_(
+        "ELSE seen_else LBRACE block RBRACE SEMICOLON seen_end_condition",
+        "SEMICOLON seen_end_condition",
+    )  # type: ignore
+    def optional_else(self, p):
+        return p
+
+    @_("")  # type: ignore
+    def seen_end_condition(self, p):
+        end = self.jumps.pop()
+        self.quadruples.fill(end, self.quadruples.current_index())
+        return p
+
+    @_("")  # type: ignore
+    def seen_else(self, p):
+        self.quadruples.add(Op.GOTO, -1, -1, -1)
+        false = self.jumps.pop()
+        self.jumps.append(self.quadruples.current_index())
+        self.quadruples.fill(false, self.quadruples.current_index() + 1)
         return p
 
     @_("DO LBRACE block RBRACE WHILE LPAREN expression RPAREN")  # type: ignore
@@ -236,8 +320,33 @@ class EnteParser(Parser):
     ################################################par
     # Expression -> Exp -> Term -> Factor -> Const #
     ################################################
-    @_("exp", "exp LESSER exp", "exp GREATER exp")  # type: ignore
+    @_("exp", "exp LESSER seen_operator exp", "exp GREATER seen_operator exp")  # type: ignore
     def expression(self, p):
+        if not self.operators.is_empty() and self.operators.peek() in [
+            Op.LESS_THAN,
+            Op.GREATER_THAN,
+        ]:
+            operator = self.operators.pop()
+
+            right_operand = self.operands.pop()
+            right_type = self.operand_types.pop()
+
+            left_operand = self.operands.pop()
+            left_type = self.operand_types.pop()
+
+            # validate semantics here
+            result_type = validate_semantics(left_type, right_type, operator)
+            if result_type == "error":
+                raise Exception(
+                    f"type mismatch: {left_operand} {operator} {right_type}"
+                )
+
+            result_addr = self.memory_assigner.assign(f"t_{result_type}")
+
+            self.quadruples.add(operator, left_operand, right_operand, result_addr)
+
+            self.operands.append(result_addr)
+            self.operand_types.append(result_type)
         return p
 
     @_("term exp_operator")  # type: ignore
@@ -261,11 +370,11 @@ class EnteParser(Parser):
                     f"type mismatch: {left_operand} {operator} {right_type}"
                 )
 
-            result = f"t-{self.quadruples.get_index()+1}"
+            result_addr = self.memory_assigner.assign(f"t_{result_type}")
 
-            self.quadruples.add(operator, left_operand, right_operand, result)
+            self.quadruples.add(operator, left_operand, right_operand, result_addr)
 
-            self.operands.append(result)
+            self.operands.append(result_addr)
             self.operand_types.append(result_type)
         return p
 
@@ -294,11 +403,11 @@ class EnteParser(Parser):
                     f"type mismatch: {left_operand} {operator} {right_type}"
                 )
 
-            result = f"t-{self.quadruples.get_index()+1}"
+            result_addr = self.memory_assigner.assign(f"t_{result_type}")
 
-            self.quadruples.add(operator, left_operand, right_operand, result)
+            self.quadruples.add(operator, left_operand, right_operand, result_addr)
 
-            self.operands.append(result)
+            self.operands.append(result_addr)
             self.operand_types.append(result_type)
         return p
 
@@ -323,6 +432,10 @@ class EnteParser(Parser):
                 self.operators.append(Op.MULTIPLY)
             case "/":
                 self.operators.append(Op.DIVIDE)
+            case ">":
+                self.operators.append(Op.GREATER_THAN)
+            case "<":
+                self.operators.append(Op.LESS_THAN)
             case _:
                 print(f"invalid operator {operator}")
 
@@ -365,12 +478,19 @@ class EnteParser(Parser):
 
     @_("ID")  # type: ignore
     def const_id(self, p):
-        # look up id in symbol table
-        # if not available, id does not exist, throw error
-        # symbol table will contain address and type
-        # push to stacks
+        id_symbol = Symbol()
+        for scope in reversed(self.scope):
+            scope_symbols = self.scope_table.lookup(scope).child
+            if scope_symbols.lookup(p[0]):
+                id_symbol = scope_symbols.lookup(p[0])
+                break
 
-        print("not implemented")
+        if not id_symbol:
+            raise Exception(f"Symbol {p[0]} is undeclared")
+
+        self.operands.append(id_symbol.address)
+        self.operand_types.append(id_symbol.data_type)
+
         return p
 
     #########
