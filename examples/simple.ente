@@ -1,10 +1,10 @@
 program simple;
-var x, a : int;
+var x, a : float;
     y, b : float;
 
 
 main {
-    x = 5 + 10 * 5.10;
+    x = 5 + 10 * 5;
 };
 
 end;
