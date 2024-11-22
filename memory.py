@@ -34,27 +34,27 @@ class MemoryAssigner:
             "local": {},
         }
 
-    def assign(self, memory_type, value=None):
+    def assign(self, mem_type, value=None):
         if value is not None:
             if value not in self.constants.keys():
-                self.constants[value] = self.counter["global"][memory_type]
+                self.constants[value] = self.counter["global"][mem_type]
             else:
                 return self.constants[value]
 
-        assigned_address = self.counter["global"][memory_type]
-        self.counter["global"][memory_type] += 1
+        assigned_address = self.counter["global"][mem_type]
+        self.counter["global"][mem_type] += 1
 
         return assigned_address
 
-    def assign_local(self, function, type):
-        if function not in self.counter["local"]:
-            self.counter["local"][function] = {
+    def assign_local(self, scope_name, data_type):
+        if scope_name not in self.counter["local"]:
+            self.counter["local"][scope_name] = {
                 "l_int": OFFSETS["l_int"],
                 "l_float": OFFSETS["l_float"],
             }
 
-        assigned_address = self.counter["local"][function][type]
-        self.counter["local"][function][type] += 1
+        assigned_address = self.counter["local"][scope_name][data_type]
+        self.counter["local"][scope_name][data_type] += 1
 
         return assigned_address
 
@@ -88,58 +88,228 @@ class MemoryAssigner:
                 print(f"  {key2}: {value2}")
 
 
-class Memory:
-    def __init__(self) -> None:
-        # Initialize an empty memory dictionary to store values at pointers
-        self.memory = {}
+class MemorySegment:
+    """
+    This class represents a dynamic memory segment in runtime.
 
-    def allocate(self, pointer: int, value: int | float | bool) -> None:
-        # Allocate memory for a pointer with a value
-        self.memory[pointer] = value
+    Attributes:
+    - memory (list): The memory segment.
+    - type (str): The type of memory segment [g_void, g_int, g_float, l_int, l_float, t_int, t_float, t_bool, c_int, c_float, c_string].
+    """
 
-    def deallocate(self, pointer: int) -> None:
-        # Deallocate memory for a pointer (remove from memory)
-        if pointer in self.memory:
-            del self.memory[pointer]
+    def __init__(self, mem_type, size=0):
+        if mem_type not in OFFSETS.keys():
+            raise ValueError(f"Invalid memory segment type: {mem_type}")
 
-    def access(self, pointer: int) -> int | None:
-        # Access a memory location by pointer, returns None if not found
-        return self.memory.get(pointer, None)
+        self.memory = [None] * size
+        self.mem_type = mem_type
+
+    def access(self, address):
+        """
+        Access a memory address.
+
+        Parameters:
+        - address (int): The memory address.
+
+        Returns:
+        - The value at the memory address.
+        """
+        index = address - OFFSETS[self.mem_type]
+        return self.memory[index] if index < len(self.memory) else None
+
+    def assign(self, address, value):
+        """
+        Assign a value to a memory address.
+
+        Parameters:
+        - address (int): The memory address.
+        - value: The value to assign.
+        """
+        index = address - OFFSETS[self.mem_type]
+        self.memory[index] = value
+
+    def __str__(self):
+        return f"{self.memory}"
 
     def __repr__(self):
-        return f"Memory({self.memory})"
+        return str(self)
 
 
 class MemoryManager:
-    def __init__(self) -> None:
-        # Initialize the memory and local memory stack
-        self.memory = Memory()
-        self.local_memory_stack = Stack("local_memory_stack")
+    """
+    This class manages the memory allocation for variables, parameters and constants in the
+    runtime process.
+    """
 
-    def access(self, pointer: int) -> int | None:
-        return self.memory.access(pointer)
+    def __init__(self):
+        self.descriptor = {
+            "global": {
+                "g_void": 0,
+                "g_int": 0,
+                "g_float": 0,
+                "t_int": 0,
+                "t_float": 0,
+                "t_bool": 0,
+                "c_int": 0,
+                "c_float": 0,
+                "c_string": 0,
+            },
+            "local": {},
+        }
+        self.memory = Stack("memory")
 
-    def access_operands(
-        self, pointer_left: int, pointer_right: int
-    ) -> tuple[int | None, int | None]:
-        # Access two operands from memory
-        return self.access(pointer_left), self.access(pointer_right)
+    def allocate(self, mem_type, size=0):
+        """
+        Allocate memory for a memory segment.
 
-    def allocate_local(self) -> None:
-        self.local_memory_stack.append({})
-
-    def deallocate_local(self) -> None:
-        if not self.local_memory_stack.is_empty():
-            self.local_memory_stack.pop()  # Remove the most recent local scope
-
-    def param(self, param_value: int | float | bool) -> None:
-        # Add a parameter to the local memory scope
-        if not self.local_memory_stack.is_empty():
-            current_scope: dict = self.local_memory_stack.peek()
-            param_pointer = len(current_scope)
-            current_scope[param_pointer] = param_value
+        Parameters:
+        - mem_type (str): The type of memory segment [g_void, g_int, g_float, l_int, l_float, t_int, t_float, t_bool, c_int, c_float, c_string].
+        - size (int): The size of the memory segment.
+        """
+        if not mem_type.startswith("l"):
+            if len(self.memory) == 0:
+                self.memory.append({})
+            self.memory.items()[0][mem_type] = MemorySegment(mem_type, size)
         else:
-            raise ValueError("No local memory scope to add a parameter")
+            self.memory.items()[-1][mem_type] = MemorySegment(mem_type, size)
 
-    def __repr__(self):
-        return f"MemoryManager({self.memory}, local_memory_stack={self.local_memory_stack})"
+    def allocate_local(self):
+        """
+        Allocate memory for a local memory segments.
+        """
+        self.memory.append({})
+
+    def deallocate_local(self):
+        """
+        Deallocate memory for a memory segments.
+        """
+        self.memory.pop()
+
+    def describe(self, mem_type, size=0, function=None):
+        """
+        Describe a memory segment.
+        """
+        if function is not None:
+            if function not in self.descriptor["local"]:
+                self.descriptor["local"][function] = {}
+            self.descriptor["local"][function][mem_type] = size
+        else:
+            self.descriptor["global"][mem_type] = size
+
+    def access(self, address):
+        """
+        Access a memory address.
+
+        Parameters:
+        - address (int): The memory address.
+        """
+        mem_type = self._get_type(address)
+
+        if mem_type.startswith("l"):
+            value = (
+                self.memory.peek()[mem_type].access(address)
+                if self.memory.peek()[mem_type].access(address) is not None
+                else self.memory.peek(2)[mem_type].access(address)
+            )
+        else:
+            value = self.memory.first()[mem_type].access(address)
+
+        if mem_type.endswith("void"):
+            return None
+        if mem_type.endswith("int"):
+            return int(value)
+        if mem_type.endswith("float"):
+            return float(value)
+        if mem_type.endswith("bool"):
+            return bool(value)
+        if mem_type.endswith("string"):
+            return str(value)
+
+        return value
+
+    def assign(self, address, value):
+        """
+        Assign a value to a memory address.
+
+        Parameters:
+        - address (int): The memory address.
+        - value: The value to assign.
+        """
+        mem_type = self._get_type(address)
+
+        if mem_type.startswith("l"):
+            memory_to_access = self.memory.items()[-1]
+        else:
+            memory_to_access = self.memory.items()[0]
+
+        if mem_type.endswith("int"):
+            value = int(value)
+        if mem_type.endswith("float"):
+            value = float(value)
+        if mem_type.endswith("bool"):
+            value = bool(value)
+        if mem_type.endswith("string"):
+            value = str(value)
+
+        memory_to_access[mem_type].assign(address, value)
+
+    def param(self, address):
+        """
+        Copy a address value to a local memory segment.
+
+        Parameters:
+        - address (int): The memory address.
+        """
+        mem_type = self._get_type(address)
+
+        if mem_type.startswith("l"):
+            access_memory = self.memory.items()[-2]
+        else:
+            access_memory = self.memory.items()[0]
+
+        value = access_memory[mem_type].access(address)
+
+        index = 0
+        target_memory = self.memory.peek()
+
+        if mem_type.endswith("int"):
+            target_type = "l_int"
+        if mem_type.endswith("float"):
+            target_type = "l_float"
+
+        while (
+            target_memory[target_type].access(OFFSETS[target_type] + index) is not None
+        ):
+            index += 1
+
+        target_memory[target_type].assign(OFFSETS[target_type] + index, value)
+
+    def _get_type(self, address):
+        """
+        Get string type from memory address.
+        """
+        if address < OFFSETS["g_int"]:
+            return "g_void"
+        elif address < OFFSETS["g_float"]:
+            return "g_int"
+        elif address < OFFSETS["t_int"]:
+            return "g_float"
+        elif address < OFFSETS["t_float"]:
+            return "t_int"
+        elif address < OFFSETS["t_bool"]:
+            return "t_float"
+        elif address < OFFSETS["c_int"]:
+            return "t_bool"
+        elif address < OFFSETS["c_float"]:
+            return "c_int"
+        elif address < OFFSETS["c_string"]:
+            return "c_float"
+        elif address < OFFSETS["l_int"]:
+            return "c_string"
+        elif address < OFFSETS["l_float"]:
+            return "l_int"
+        else:
+            return "l_float"
+
+    def __str__(self):
+        return str(self.memory)
