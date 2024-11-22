@@ -195,7 +195,6 @@ class EnteParser(Parser):
             left_operand = self.operands.pop()
             left_type = self.operand_types.pop()
 
-            # validate semantics here
             result_type = validate_semantics(left_type, right_type, operator)
             if result_type == "error":
                 raise Exception(
@@ -203,8 +202,6 @@ class EnteParser(Parser):
                 )
 
             self.quadruples.add(operator, left_operand, right_operand, -1)
-
-            self.operand_types.append(result_type)
 
         return p
 
@@ -270,7 +267,6 @@ class EnteParser(Parser):
 
             self.operands.append(result)
             self.operand_types.append(result_type)
-
         return p
 
     @_("PLUS seen_operator exp", "MINUS seen_operator exp", "empty")  # type: ignore
