@@ -2,8 +2,6 @@ from sly import Lexer
 
 
 class EnteLexer(Lexer):
-
-    
     tokens = {
         # Identifiers and literals
         ID,  # identifier # type: ignore
@@ -70,30 +68,30 @@ class EnteLexer(Lexer):
     COMMA = r","
 
     # Keywords
-    ID["program"] = PROGRAM # type: ignore
-    ID["main"] = MAIN # type: ignore
-    ID["write"] = WRITE # type: ignore
-    ID["int"] = INT # type: ignore
-    ID["float"] = FLOAT # type: ignore
+    ID["program"] = PROGRAM  # type: ignore
+    ID["main"] = MAIN  # type: ignore
+    ID["write"] = WRITE  # type: ignore
+    ID["int"] = INT  # type: ignore
+    ID["float"] = FLOAT  # type: ignore
 
-    ID["var"] = VAR # type: ignore
-    ID["end"] = END # type: ignore
-    ID["void"] = VOID # type: ignore
-    ID["if"] = IF # type: ignore
-    ID["else"] = ELSE # type: ignore
-    ID["while"] = WHILE # type: ignore
-    ID["do"] = DO # type: ignore
+    ID["var"] = VAR  # type: ignore
+    ID["end"] = END  # type: ignore
+    ID["void"] = VOID  # type: ignore
+    ID["if"] = IF  # type: ignore
+    ID["else"] = ELSE  # type: ignore
+    ID["while"] = WHILE  # type: ignore
+    ID["do"] = DO  # type: ignore
 
-    @_(r'"[^"]*"') # type: ignore
+    @_(r'"[^"]*"')  # type: ignore
     def STRING(self, t):
         # Strip the quotes from the string
         t.value = t.value[1:-1]
         return t
 
-    @_(r"\n+") # type: ignore
+    @_(r"\n+")  # type: ignore
     def ignore_newline(self, t):
         self.lineno += t.value.count("\n")
 
-    def error(self, t): # type: ignore
+    def error(self, t):  # type: ignore
         print(f"Line {self.lineno-1}: Bad character {t.value[0]}")
         self.index += 1
