@@ -1,3 +1,4 @@
+import logging
 from sly import Parser
 from lexer import EnteLexer
 from memory import MemoryAssigner
@@ -7,43 +8,46 @@ from operators import Operator as Op
 from quadruples import QuadrupleManager
 from semantics import validate_semantics
 from stack import Stack
+from symbol_table import SymbolTable
 
 
 class EnteParser(Parser):
     tokens = EnteLexer.tokens
 
     precedence = (
-        ("left", PLUS, MINUS),
-        ("left", MULTIPLY, DIVIDE),
+        ("left", PLUS, MINUS),  # type: ignore
+        ("left", MULTIPLY, DIVIDE),  # type: ignore
     )
 
     debugfile = "parser.out"
+    log = logging.getLogger()
+    log.setLevel(logging.ERROR)
 
     def __init__(self):
         super().__init__()
         self.quadruples = QuadrupleManager()
         self.scope = []
         self.directory = {}
-        self.types = {}
 
         # Stacks for quadruple building
         self.operands = Stack("operands")
         self.operand_types = Stack("operand_types")
         self.operators = Stack("operators")
 
+        self.symbol_table = SymbolTable()
         self.memory_assigner: MemoryAssigner = MemoryAssigner()
 
     ########
     # Root #
     ########
-    @_("PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON")
+    @_("PROGRAM prog_init SEMICOLON global_scope seen_global main END SEMICOLON")  # type: ignore
     def root(self, p):
         return (f"root {p[1]}", p[3], p[5])
 
     ########################
     # Initialize a program #
     ########################
-    @_("ID")
+    @_("ID")  # type: ignore
     def prog_init(self, p):
         # init function symbol table
         # init quadruples
@@ -52,18 +56,17 @@ class EnteParser(Parser):
         scope = "global"
         self.scope.append(scope)
         self.directory[scope] = []
-        self.types[scope] = []
 
         return p[0]
 
     ##########
     # Global #
     ##########
-    @_("vars funcs")
+    @_("vars funcs")  # type: ignore
     def global_scope(self, p):
         return p
 
-    @_("")
+    @_("")  # type: ignore
     def seen_global(self, p):
         self.scope.pop()
         return p
@@ -71,109 +74,106 @@ class EnteParser(Parser):
     #############
     # Variables #
     #############
-    @_(
+    @_(  # type: ignore
         "VAR vars_declare",
         "empty",
     )
     def vars(self, p):
         return p
 
-    @_(
+    @_(  # type: ignore
         "var_list COLON var_type SEMICOLON",
         "var_list COLON var_type SEMICOLON vars_declare",
     )
     def vars_declare(self, p):
         return p
 
-    @_("ID", "ID COMMA var_list")
+    @_("ID", "ID COMMA var_list")  # type: ignore
     def var_list(self, p):
         curr_scope = self.scope[-1] if self.scope else "global"
         self.directory[curr_scope].append(p[0])
 
         return p
 
-    @_("INT", "FLOAT")
+    @_("INT", "FLOAT")  # type: ignore
     def var_type(self, p):
         curr_scope = self.scope[-1] if self.scope else "global"
-        self.types[curr_scope].append(p[0])
+        print(curr_scope)
 
         return p
 
     #############
     # Functions #
     #############
-    @_("ID COLON var_type", "ID COLON var_type COMMA params")
+    @_("ID COLON var_type", "ID COLON var_type COMMA params")  # type: ignore
     def params(self, p):
         curr_scope = self.scope[-1] if self.scope else "global"
         self.directory[curr_scope].append(p[0])
 
         return p
 
-    @_("")
+    @_("")  # type: ignore
     def at_params(self, p):
         func = p[-2]
         scope = "params"
         self.scope.append(scope)
         self.directory[scope] = []
-        self.types[scope] = []
         return p
 
-    @_("")
-    def seen_params(self, p):
+    @_("")  # type: ignore
+    def seen_params(self, _):
         if self.scope:
             self.scope.pop()
 
-    @_(
+    @_(  # type: ignore
         "VOID ID LPAREN at_params params seen_params RPAREN LBRACE at_func block seen_func RBRACE SEMICOLON",
         "empty",
     )
     def funcs(self, p):
         return p
 
-    @_("")
+    @_("")  # type: ignore
     def at_func(self, p):
         scope = p[-7]
         self.scope.append(scope)
         self.directory[scope] = []
-        self.types[scope] = []
 
-    @_("")
-    def seen_func(self, p):
+    @_("")  # type: ignore
+    def seen_func(self, _):
         self.scope.pop()
 
     ########
     # Main #
     ########
-    @_("MAIN LBRACE at_main block seen_main RBRACE SEMICOLON", "empty")
+    @_("MAIN LBRACE at_main block seen_main RBRACE SEMICOLON", "empty")  # type: ignore
     def main(self, p):
         return p
 
-    @_("")
-    def at_main(self, p):
+    @_("")  # type: ignore
+    def at_main(self, _):
         scope = "main"
         self.scope.append(scope)
         self.directory[scope] = []
-        self.types[scope] = []
 
-    @_("")
-    def seen_main(self, p):
+    @_("")  # type: ignore
+    def seen_main(self, _):
         self.scope.pop()
 
     #########
     # Block #
     #########
-    @_("vars statements")
+    @_("vars statements")  # type: ignore
     def block(self, p):
         return p
 
     ##############
     # Statements #
     ##############
-    @_("statement SEMICOLON statements", "empty")
+    @_("statement SEMICOLON statements", "empty")  # type: ignore
     def statements(self, p):
         return p
 
-    @_(
+    @_(  # type: ignore
         "assign",
         "write",
         "condition",
@@ -184,7 +184,7 @@ class EnteParser(Parser):
     def statement(self, p):
         return p[0]
 
-    @_("ID ASSIGN in_assign expression")
+    @_("ID ASSIGN in_assign expression")  # type: ignore
     def assign(self, p):
         if not self.operators.is_empty() and self.operators.peek() == Op.ASSIGN:
             operator = self.operators.pop()
@@ -208,41 +208,42 @@ class EnteParser(Parser):
 
         return p
 
-    @_("")
+    @_("")  # type: ignore
     def in_assign(self, p):
         self.operands.append(p[-2])
         # TODO: look up symbol in table
+
         self.operand_types.append("int")
         self.operators.append(Op.ASSIGN)
 
-    @_("WHILE LPAREN expression RPAREN LBRACE block RBRACE")
+    @_("WHILE LPAREN expression RPAREN LBRACE block RBRACE")  # type: ignore
     def loop(self, p):
         return p
 
-    @_("WRITE LPAREN expression RPAREN")
+    @_("WRITE LPAREN expression RPAREN")  # type: ignore
     def write(self, p):
         return p
 
-    @_("IF LPAREN expression RPAREN LBRACE block RBRACE else_condition")
+    @_("IF LPAREN expression RPAREN LBRACE block RBRACE else_condition")  # type: ignore
     def condition(self, p):
         return p
 
-    @_("ELSE LBRACE block RBRACE", "empty")
+    @_("ELSE LBRACE block RBRACE", "empty")  # type: ignore
     def else_condition(self, p):
         return p
 
-    @_("DO LBRACE block RBRACE WHILE LPAREN expression RPAREN")
+    @_("DO LBRACE block RBRACE WHILE LPAREN expression RPAREN")  # type: ignore
     def do_while(self, p):
         return p
 
     ################################################par
     # Expression -> Exp -> Term -> Factor -> Const #
     ################################################
-    @_("exp", "exp LESSER exp", "exp GREATER exp")
+    @_("exp", "exp LESSER exp", "exp GREATER exp")  # type: ignore
     def expression(self, p):
         return p
 
-    @_("term exp_operator")
+    @_("term exp_operator")  # type: ignore
     def exp(self, p):
         if not self.operators.is_empty() and self.operators.peek() in [
             Op.ADD,
@@ -272,11 +273,11 @@ class EnteParser(Parser):
 
         return p
 
-    @_("PLUS seen_operator exp", "MINUS seen_operator exp", "empty")
+    @_("PLUS seen_operator exp", "MINUS seen_operator exp", "empty")  # type: ignore
     def exp_operator(self, p):
         return p
 
-    @_("factor term_operator")
+    @_("factor term_operator")  # type: ignore
     def term(self, p):
         if not self.operators.is_empty() and self.operators.peek() in [
             Op.MULTIPLY,
@@ -305,15 +306,15 @@ class EnteParser(Parser):
             self.operand_types.append(result_type)
         return p
 
-    @_("MULTIPLY seen_operator term", "DIVIDE seen_operator term", "empty")
+    @_("MULTIPLY seen_operator term", "DIVIDE seen_operator term", "empty")  # type: ignore
     def term_operator(self, p):
         return p
 
-    @_("LPAREN expression RPAREN", "const")
+    @_("LPAREN expression RPAREN", "const")  # type: ignore
     def factor(self, p):
         return p
 
-    @_("")
+    @_("")  # type: ignore
     def seen_operator(self, p):
         operator = p[-1]
 
@@ -329,7 +330,7 @@ class EnteParser(Parser):
             case _:
                 print(f"invalid operator {operator}")
 
-    @_(
+    @_(  # type: ignore
         "PLUS seen_operator ID",
         "MINUS seen_operator ID",
         "PLUS seen_operator const_num",
@@ -341,32 +342,32 @@ class EnteParser(Parser):
     def const(self, p):
         return p
 
-    @_("const_int", "const_float")
+    @_("const_int", "const_float")  # type: ignore
     def const_num(self, p):
         return p
 
-    @_("NUMBER")
+    @_("NUMBER")  # type: ignore
     def const_int(self, p):
         addr = self.memory_assigner.assign("c_int", p[0])
         self.operands.append(addr)
         self.operand_types.append("int")
         return p
 
-    @_("FLOAT_NUMBER")
+    @_("FLOAT_NUMBER")  # type: ignore
     def const_float(self, p):
         addr = self.memory_assigner.assign("c_float", p[0])
         self.operands.append(addr)
         self.operand_types.append("float")
         return p
 
-    @_("STRING")
+    @_("STRING")  # type: ignore
     def const_string(self, p):
         addr = self.memory_assigner.assign("c_string", p[0])
         self.operands.append(addr)
         self.operand_types.append("string")
         return p
 
-    @_("ID")
+    @_("ID")  # type: ignore
     def const_id(self, p):
         # look up id in symbol table
         # if not available, id does not exist, throw error
@@ -379,6 +380,6 @@ class EnteParser(Parser):
     #########
     # Empty #
     #########
-    @_("")
-    def empty(self, p):
+    @_("")  # type: ignore
+    def empty(self, _):
         pass
