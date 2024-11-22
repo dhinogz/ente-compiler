@@ -1,15 +1,12 @@
 program conditions;
 
-var x : int;
-    y : int;
+var x, y : int;
 
 main {
     x = 2; y = 5;
     
     if (x < y) {
         write("x smaller than y");
-    } else {
-        write("y is smaller than x");
     };
 };
 end;

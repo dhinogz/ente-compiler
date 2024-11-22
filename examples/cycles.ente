@@ -8,11 +8,6 @@ main {
         x = x + 1; 
         write(x);
     };
-
-    do {
-        x = x - 1;
-        write(x);
-    } while (x > 0);
 };
 
 end;
