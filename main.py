@@ -13,6 +13,7 @@ cli = typer.Typer(no_args_is_help=True)
 
 TMP_PATH = "tmp/a.en"
 
+
 def build_bytecode(file):
     if not file.is_file():
         print("not a file")
@@ -47,6 +48,7 @@ def build_bytecode(file):
         bytecode.write(":\n")
         bytecode.write(str(output[2]))
 
+
 @cli.command("run")
 def run(file: Annotated[Path, typer.Argument()]):
     try:
@@ -65,6 +67,7 @@ def build(file: Annotated[Path, typer.Argument()]):
 @cli.command("exec")
 def execute(file: Annotated[Path, typer.Argument()]):
     run_vm(file)
+
 
 def run_vm(file):
     if isinstance(file, str):
