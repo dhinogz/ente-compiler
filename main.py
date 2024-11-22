@@ -79,10 +79,8 @@ def run_vm(file):
     memory_manager = MemoryManager()
     vm = VirtualMachine(memory_manager)
 
-    # Read and process the file
     line = text.splitlines()
 
-    # Allocate memory segments
     idx = 0
     while line[idx] != "~" and line[idx] != ":":
         mem_type, size = line[idx].split("|")
@@ -101,7 +99,6 @@ def run_vm(file):
             idx += 1
     idx += 1
 
-    # Allocate global memory
     for key, value in memory_manager.descriptor["global"].items():
         memory_manager.allocate(key, value)
 
