@@ -1,4 +1,4 @@
-# Ente Language
+# Ente Compiler
 
 The "Ente" Compiler (German for "pato") is a small, imperative, procedural programming language designed for educational purposes, primarily for educational use in compiler construction. The language follows a traditional procedural paradigm, which means that programs in Ente are structured around functions, variables, and control flow statements. It includes basic features common to many languages, such as arithmetic operations, conditional statements, and loops, while keeping the syntax simple enough.
 
