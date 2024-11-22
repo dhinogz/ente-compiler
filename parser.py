@@ -136,7 +136,7 @@ class EnteParser(Parser):
     def funcs(self, p):
         return p
 
-    @_("")  # type: ignorepars
+    @_("")  # type: ignore
     def seen_func(self, _):
         self.quadruples.add(Op.ENDFUNC, -1, -1, -1)
         self.scope.pop()
@@ -292,10 +292,10 @@ class EnteParser(Parser):
             self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
             self.jumps.append(self.quadruples.current_index())
 
-    @_(
+    @_( # type: ignore
         "ELSE seen_else LBRACE block RBRACE SEMICOLON seen_end_condition",
         "SEMICOLON seen_end_condition",
-    )  # type: ignore
+    )
     def optional_else(self, p):
         return p
 
