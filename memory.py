@@ -1,3 +1,6 @@
+from stack import Stack
+
+
 OFFSETS = {
     "g_void": 500,
     "g_int": 1000,
@@ -111,7 +114,7 @@ class MemoryManager:
     def __init__(self) -> None:
         # Initialize the memory and local memory stack
         self.memory = Memory()
-        self.local_memory_stack = []
+        self.local_memory_stack = Stack("local_memory_stack")
 
     def access(self, pointer: int) -> int | None:
         return self.memory.access(pointer)
@@ -122,17 +125,17 @@ class MemoryManager:
         # Access two operands from memory
         return self.access(pointer_left), self.access(pointer_right)
 
-    def allocate_local(self, function_name: str) -> None:
-        self.local_memory_stack.append({})  # Start a new scope for local variables
+    def allocate_local(self) -> None:
+        self.local_memory_stack.append({})
 
     def deallocate_local(self) -> None:
-        if self.local_memory_stack:
+        if not self.local_memory_stack.is_empty():
             self.local_memory_stack.pop()  # Remove the most recent local scope
 
     def param(self, param_value: int | float | bool) -> None:
         # Add a parameter to the local memory scope
-        if self.local_memory_stack:
-            current_scope = self.local_memory_stack[-1]
+        if not self.local_memory_stack.is_empty():
+            current_scope: dict = self.local_memory_stack.peek()
             param_pointer = len(current_scope)
             current_scope[param_pointer] = param_value
         else:

@@ -1,9 +1,3 @@
-"""
-Semantic Cube for Compiler Operations module.
-
-This module contains the semantic cube for the compiler operations.
-"""
-
 from operators import Operator
 
 

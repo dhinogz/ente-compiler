@@ -16,7 +16,7 @@ class VirtualMachine:
 
             left_operand = curr.left_operand
             right_operand = curr.right_operand
-            result = None
+            result = curr.result
 
             # Handling operations
             match curr.operator:
@@ -37,7 +37,7 @@ class VirtualMachine:
                 case Operator.GOSUB:
                     print("Function call not implemented")
                 case Operator.ERA:
-                    self.memory_manager.allocate_local(curr.result)
+                    self.memory_manager.allocate_local()
                     print(f"Function memory allocated for {curr.result}")
                 case Operator.ENDFUNC:
                     self.memory_manager.deallocate_local()
