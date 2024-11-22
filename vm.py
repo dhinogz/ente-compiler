@@ -1,11 +1,13 @@
 from quadruples import Quadruple
 from operators import Operator, perform_operation
 from memory import MemoryManager
+from stack import Stack
 
 
 class VirtualMachine:
     def __init__(self) -> None:
         self.memory_manager = MemoryManager()
+        self.function_exit = Stack("function_exit")
 
     def execute(self, quadruples: list[Quadruple]):
         ip = 0
@@ -14,36 +16,42 @@ class VirtualMachine:
             curr = quadruples[ip]
             print(f"Executing: {curr}")
 
-            left_operand = curr.left_operand
-            right_operand = curr.right_operand
+            left_operand = self.memory_manager.access(curr.left_operand)
+            right_operand = self.memory_manager.access(curr.right_operand)
             result = curr.result
 
             # Handling operations
             match curr.operator:
                 case Operator.PRINT:
-                    value_to_print = self.memory_manager.access(left_operand)
-                    print(f"PRINT: {value_to_print}")
+                    print(left_operand)
                 case Operator.GOTO:
                     ip = curr.result
                     continue
                 case Operator.GOTOF:
-                    if not self.memory_manager.access(left_operand):
+                    if not left_operand:
                         ip = curr.result
                         continue
                 case Operator.GOTOT:
-                    if self.memory_manager.access(left_operand):
+                    if left_operand:
                         ip = curr.result
                         continue
                 case Operator.GOSUB:
-                    print("Function call not implemented")
+                    self.function_exit.append(ip + 1)
+                    ip = curr.result
+                    continue
                 case Operator.ERA:
                     self.memory_manager.allocate_local()
                     print(f"Function memory allocated for {curr.result}")
                 case Operator.ENDFUNC:
                     self.memory_manager.deallocate_local()
-                    print(f"Function memory deallocated for {curr.result}")
+                    next_func = self.function_exit.pop()
+                    if next_func is not None:
+                        ip = next_func
+                    else:
+                        print(f"error in function_exit stack")
+                    continue
                 case Operator.PARAM:
-                    self.memory_manager.param(left_operand)
+                    self.memory_manager.param(curr.left_operand)
                     print(f"Parameter {left_operand} added to function memory")
                 case _:
                     try:
@@ -60,7 +68,6 @@ class VirtualMachine:
                         ) from e
 
             if result is not None:
-                # TODO: Store the result in memory and update the result pointer in the quadruple
                 self.memory_manager.memory.allocate(curr.result, result)
                 print(f"Result stored at {curr.result}: {result}")
 
