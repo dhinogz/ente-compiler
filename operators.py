@@ -2,25 +2,25 @@ from enum import IntEnum
 
 
 class Operator(IntEnum):
-    SUBTRACT = 1
-    ADD = 2
-    MULTIPLY = 3
-    DIVIDE = 4
-    LESS_THAN = 5
-    GREATER_THAN = 6
-    LESS_EQUAL = 7
-    GREATER_EQUAL = 8
-    EQUAL = 9
-    NOT_EQUAL = 10
-    PRINT = 11
-    GOTO = 12
-    GOTOF = 13
-    GOTOT = 14
-    GOSUB = 15
-    ERA = 16
-    ENDFUNC = 17
-    PARAM = 18
-    ASSIGN = 19
+    GOTO = 1
+    ASSIGN = 2
+    PRINT = 3
+    GOTOF = 4
+    GOTOT = 5
+    GOSUB = 6
+    ERA = 8
+    ENDFUNC = 9
+    PARAM = 10
+    SUBTRACT = 12
+    ADD = 13
+    MULTIPLY = 14
+    DIVIDE = 15
+    LESS_THAN = 16
+    GREATER_THAN = 17
+    LESS_EQUAL = 18
+    GREATER_EQUAL = 19
+    EQUAL = 20
+    NOT_EQUAL = 21
 
 
 def perform_operation(
