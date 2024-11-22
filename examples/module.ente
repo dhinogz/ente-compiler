@@ -1,0 +1,17 @@
+program modules;
+
+main {
+    var a : int;
+    var b : float;
+    var c : string;
+
+    a = 1;
+    b = 2.5;
+    c = "1 + 2.5 = 3.5";
+
+    write(a);
+    write(b);
+    write(c);
+};
+
+end;

@@ -1,15 +1,15 @@
 program simple;
-var x, a : int;
-
-void add(a: int, b: int) {
-    var y : int;
-    a = 5 + 10;
-    write(a);
-};
+var x : int;
+var y : float;
+var a : string;
 
 main {
-    x = 5 + 10 * 5;
+    x = 5;
+    y = 2.5;
+    a = "test";
     write(x);
+    write(y);
+    write(a);
 };
 
 end;

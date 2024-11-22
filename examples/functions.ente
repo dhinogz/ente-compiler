@@ -1,28 +1,16 @@
 program functions;
-var x : int;
-    y : float;
+var x, y : int;
 
-void foo(x : int) {
-    var z : int;
-    z = x + 2;
-    write(z);
-}
-
-void bar(x : int, y : float) {
-    var z : int;
-    z = x + y;
-    {
-        z = x + y;
-        foo(z - 1);
-        write(z);
-    }
-}
+void add(a: int, b: int) {
+    var res : int;
+    res = a + b;
+    write(res);
+};
 
 main {
     x = 5;
-    y = 2.5;
-    write(x);
-    write(y);
+    y = 10;
+    add(x, y);
 };
 
 end;
