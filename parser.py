@@ -247,13 +247,11 @@ class EnteParser(Parser):
         self.operands.append(id_symbol.address)
         self.operand_types.append(id_symbol.data_type)
 
-    @_(  # type: ignore
-        "WHILE LPAREN in_loop expression seen_loop_expression RPAREN LBRACE block RBRACE"
-    )
+    @_("WHILE LPAREN in_loop expression seen_condition RPAREN LBRACE block RBRACE")  # type: ignore
     def loop(self, p):
         false = self.jumps.pop()
-        end = self.jumps.pop()
-        self.quadruples.add(Op.GOTO, -1, -1, end)
+        start = self.jumps.pop()
+        self.quadruples.add(Op.GOTO, -1, -1, start)
         self.quadruples.fill(false, self.quadruples.current_index() + 1)
         return p
 
@@ -262,15 +260,14 @@ class EnteParser(Parser):
         self.jumps.append(self.quadruples.current_index() + 1)
 
     @_("")  # type: ignore
-    def seen_loop_expression(self, _):
+    def seen_condition(self, _):
         expression_type = self.operand_types.pop()
 
         if expression_type != "bool":
             raise Exception("Cycle expression must be of type bool")
-        else:
-            expression_result = self.operands.pop()
-            self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
-            self.jumps.append(self.quadruples.current_index())
+        expression_result = self.operands.pop()
+        self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
+        self.jumps.append(self.quadruples.current_index())
 
     @_("WRITE LPAREN expression RPAREN")  # type: ignore
     def write(self, p):
@@ -280,29 +277,15 @@ class EnteParser(Parser):
 
     @_("IF LPAREN expression RPAREN seen_condition LBRACE block RBRACE optional_else")  # type: ignore
     def condition(self, p):
-        return p
-
-    @_("")  # type: ignore
-    def seen_condition(self, _):
-        expression_type = self.operand_types.pop()
-        if expression_type != "bool":
-            raise Exception("Condition expression must be of type bool")
-        else:
-            expression_result = self.operands.pop()
-            self.quadruples.add(Op.GOTOF, expression_result, -1, -1)
-            self.jumps.append(self.quadruples.current_index())
-
-    @_(  # type: ignore
-        "ELSE seen_else LBRACE block RBRACE SEMICOLON seen_end_condition",
-        "SEMICOLON seen_end_condition",
-    )
-    def optional_else(self, p):
-        return p
-
-    @_("")  # type: ignore
-    def seen_end_condition(self, p):
         end = self.jumps.pop()
         self.quadruples.fill(end, self.quadruples.current_index())
+        if self.jumps:
+            final_jump = self.jumps.pop()
+            self.quadruples.fill(final_jump, self.quadruples.current_index())
+        return p
+
+    @_("ELSE seen_else LBRACE block RBRACE", "empty")  # type: ignore
+    def optional_else(self, p):
         return p
 
     @_("")  # type: ignore
@@ -317,7 +300,7 @@ class EnteParser(Parser):
     def do_while(self, p):
         return p
 
-    ################################################par
+    ################################################
     # Expression -> Exp -> Term -> Factor -> Const #
     ################################################
     @_("exp", "exp LESSER seen_operator exp", "exp GREATER seen_operator exp")  # type: ignore

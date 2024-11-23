@@ -77,7 +77,7 @@ class VirtualMachine:
                             f"Unsupported operator: {curr.operator}"
                         ) from e
 
-            if result != -1:
+            if result != -1 and curr.operator not in [Operator.GOTOF]:
                 self.memory_manager.assign(curr.result, result)
 
             ip += 1
