@@ -7,6 +7,12 @@ main {
     
     if (x < y) {
         write("x smaller than y");
+
+        write("x + y * 10 = ?");
+        write(x + y * 10);
+
+        write("(y + x) * 10 - 5 = ?");
+        write((y + x) * 10 - 5);
     };
 };
 end;

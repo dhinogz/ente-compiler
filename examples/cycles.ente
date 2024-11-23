@@ -5,8 +5,8 @@ var x: int;
 main {
     x = 0;
     while (x < 5) {
-        x = x + 1; 
         write(x);
+        x = x + 1; 
     };
 };
 
