@@ -33,19 +33,19 @@ class VirtualMachine:
                 case Operator.PRINT:
                     print(left_operand)
                 case Operator.GOTO:
-                    ip = curr.result
+                    ip = result
                     continue
                 case Operator.GOTOF:
                     if not left_operand:
-                        ip = curr.result
+                        ip = result
                         continue
                 case Operator.GOTOT:
                     if left_operand:
-                        ip = curr.result
+                        ip = result
                         continue
                 case Operator.GOSUB:
                     self.function_exit.append(ip + 1)
-                    ip = curr.result
+                    ip = result
                     continue
                 case Operator.ERA:
                     self.memory_manager.allocate_local()
